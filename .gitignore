@@ -64,3 +64,6 @@ windows/
 android/
 linux/
 django/
+
+# user files
+settings.json
