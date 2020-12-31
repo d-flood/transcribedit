@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 # import PySimpleGUIWeb as sg
+import transcribedit.manage_token as mt
 from transcribedit.set_settings import set_settings
 import transcribedit.tokenize_text as tt
 import transcribedit.PySimpleGUIQt as sg
@@ -128,11 +129,13 @@ def initial_verse_rows():
     row4 = []
     key = 2
     for _ in range(20):
-        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='center', enable_events=True, pad=(2, 5)))
+        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row1.append(sg.Stretch())
         key += 2
     for _ in range(20):
         row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
         key += 2
+        row2.append(sg.Stretch())
     for _ in range(20):
         row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
         key += 2
@@ -149,7 +152,7 @@ def update_display_verse(verse_dict: dict, window, siglum, index: str):
     for i, word in zip(range(2, 151, 2), verse_words):
         window[f'word{i}'].update(value=word, visible=True)
     hide_unused(window, i+2)
-    load_token(index, verse_dict, siglum, window)
+    mt.load_token(index, verse_dict, siglum, window)
     highlight_selected(window, f'word{index}')
     window['-hands-'].update(value=', '.join(hands))
     window['-transcription-'].update(value=verse_dict['text'])
@@ -176,118 +179,12 @@ def submit_corrector_hand(verse_dict: dict, text: str, ref: str, siglum: str, wi
     update_display_verse(verse_dict, window, siglum, '2')
     return verse_dict
 
-def load_token(index: str, verse: dict, siglum: str, window):
-    index = int(index.replace('word', ''))
-    token = tt.get_token(index, verse, siglum)
-    # necessary data
-    window['-rule_match-'].update(value=', '.join(token['rule_match']))
-    window['-index-'].update(value=index)
-    window['-original-'].update(value=token['original'])
-    
-    # optional data
-    if 'note' in token:
-        window['-note-'].update(value=token['note'])
-    else:
-        window['-note-'].update(value='')
-    for brk in ['break_after', 'break_before', 'split']:
-        if brk in token:
-            if token[brk] == 'lb':
-                window[f'-{brk}-'].update(set_to_index=0)
-            elif token[brk] == 'pb':
-                window[f'-{brk}-'].update(set_to_index=1)
-            elif token[brk] == 'cb':
-                window[f'-{brk}-'].update(set_to_index=2)
-        else:
-            window[f'-{brk}-'].update(set_to_index=3)
-    if 'first_hand_rdg' in token:
-        window['-first_hand_rdg-'].update(value=token['first_hand_rdg'])
-    else:
-        window['-first_hand_rdg-'].update(value='')
-    if 'corr_type' in token:
-        for i, item in enumerate(['deletion', 'addition', 'substitution']):
-            if token['corr_type'] == item:
-                window['-corr_type-'].update(set_to_index=i)
-    else:
-        window['-corr_type-'].update(set_to_index=3)
-    if 'corr_method' in token:
-        for i, item in enumerate(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under']):
-            if token['corr_method'] == item:
-                window['-corr_method-'].update(set_to_index=i)
-    else:
-        window['-corr_method-'].update(set_to_index=7)
-    if 'gap_after' in token:
-        window['-gap_after-'].update(value=True)
-        window['-gap_details-'].update(value=token['gap_details'])
-    elif 'gap_before' in token:
-        window['-gap_before-'].update(value=True)
-        window['-gap_details-'].update(value=token['gap_details'])
-    else:
-        window['-no_gap-'].update(value=True)
-        window['-gap_details-'].update(value='')
-    if 'page' in token:
-        window['-page-'].update(value=token['page'])
-    else:
-        window['-page-'].update(value='')
-    if 'image_id' in token:
-        window['-image_id-'].update(value=token['image_id'])
-    else:
-        window['-image_id-'].update(value='')
-    if 'marginale' in token:
-        window['-marg_type-'].update(value=token['marginale']['marg_type'])
-        for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
-            if loc == token['marginale']['loc']:
-                window[f'-{loc}-'].update(value=True)
-        window['-marg_tx-'].update(value=token['marginale']['marg_tx'])
-    else:
-        window['-marg_type-'].update(value='')
-        window['-marg_tx-'].update(value='')
-
 def get_siglum_hand(values):
     if values['-hand-'] != 'First':
         siglum = f'{values["-siglum-"]}{values["-hand-"]}'
     else:
         siglum = values['-siglum-']
     return siglum
-
-def make_new_token(values):
-    rule_match = values['-rule_match-'].replace(' ', '').split(',')
-    siglum = get_siglum_hand(values)
-
-    token = {"index": values['-index-'],
-             "siglum": siglum,
-             "reading": siglum,
-             "original": values['-original-'],
-             "rule_match": rule_match,
-             "t": values['-original-']}
-
-    for key in ['break_after', 'break_before', 'split']:
-        if values[f'-{key}-'] != None:
-            for k, z in zip(['line break', 'page break', 'column break'], ['lb', 'pb', 'cb']):
-                if values[f'-{key}-'] == k:
-                    token[key] = z
-    if values['-corr_type-'] != None:
-        token['corr_type'] = values['-corr_type-']
-    if values['-corr_method-'] != None:
-        token['corr_method'] = values['-corr_method-']
-    if values['-no_gap-'] is False:
-        if values['-gap_after-'] is True:
-            token['gap_after'] = True
-        elif values['-gap_before-'] is True:
-            token['gap_before'] = True
-        token['gap_details'] = values['-gap_details-']
-    for v in ['page', 'image_id', 'note', 'first_hand_rdg']:
-        if values[f'-{v}-'] != '':
-            token[v] = values[f'-{v}-']
-    if values['-marg_type-'] != '':
-        token['marginale'] = {'marg_type': values['-marg_type-'],
-                              'loc': '',
-                              'marg_tx': ''}
-        for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
-            if values[f'-{loc}-'] is True:
-                 token['marginale']['loc'] = loc
-                 break
-        token['marginale']['marg_tx'] = values['-marg_tx-']
-    return token
 
 def guard_token_values(values, icon):
     for k in ['-original-', '-rule_match-', '-siglum-']:
@@ -352,9 +249,9 @@ def get_layout():
                      [sg.Text('Gap Details'), sg.Input('', key='-gap_details-')]]
 
     values_col = [[sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
-                  [sg.Text('Break After'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_after-')],
-                  [sg.Text('Break Before'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_before-')],
-                  [sg.Text('Split'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-split-')],
+                  [sg.Text('Break After'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_after-'), sg.Spin([i for i in range(41)], key='-break_after_num-', size_px=(60, 40), initial_value=0)],
+                  [sg.Text('Break Before'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_before-'), sg.Spin([i for i in range(41)], key='-break_before_num-', size_px=(60, 40), initial_value=0)],
+                  [sg.Text('Split'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-split-'), sg.Spin([i for i in range(41)], key='-split_num-', size_px=(60, 40), initial_value=0)],
                   [sg.Text('Rule Match'), sg.Input('', key='-rule_match-')]]
 
     values_col2 = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
@@ -403,6 +300,7 @@ def main():
 
         elif event == 'Hide Editing Options':
             window['-edit_frame-'].update(visible=False)
+            # window.visibility_changed()
 
         elif event == 'Load Basetext':
             if values['-ref-'] == '':
@@ -436,13 +334,13 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event.startswith('word'):
             highlight_selected(window, event)
-            load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
+            mt.load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
 
         elif event == 'Submit Edits':
             if verse_dict is None or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
                 continue
             if guard_token_values(values, icon) is True:
-                token = make_new_token(values)
+                token = mt.make_new_token(values, get_siglum_hand(values))
                 siglum = get_siglum_hand(values)
                 verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, siglum)
                 update_display_verse(verse_dict, window, siglum, values['-index-'])

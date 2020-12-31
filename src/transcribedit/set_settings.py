@@ -12,8 +12,8 @@ using certain scaling settings and high resolution monitors on Windows.
 "True" should work most of the time.'''
 
     paths_frame = [
-        [sg.Text('Witness Directory Location:', tooltip=wits_dir_tip), sg.Input('', tooltip=wits_dir_tip, key='-wits_dir-'), sg.FolderBrowse()],
-        [sg.Text('Basetext File:', tooltip=basetext_tip), sg.Input('', tooltip=basetext_tip, key='-basetext_path-'), sg.FileBrowse()]
+        [sg.Text('Witness Directory Location:', tooltip=wits_dir_tip), sg.Input(settings['wits_dir'], tooltip=wits_dir_tip, key='-wits_dir-'), sg.FolderBrowse()],
+        [sg.Text('Basetext File:', tooltip=basetext_tip), sg.Input(settings['basetext_path'], tooltip=basetext_tip, key='-basetext_path-'), sg.FileBrowse()]
     ]
 
     app_settings_frame = [
