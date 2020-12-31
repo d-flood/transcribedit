@@ -1,0 +1,51 @@
+{
+    "_id": "df_asdf",
+    "transcription": "df",
+    "transcription_siglum": "df",
+    "siglum": "df",
+    "context": "asdf",
+    "n": "asdf",
+    "text": "asdf asdf adsf",
+    "witnesses": [
+        {
+            "id": "df",
+            "tokens": [
+                {
+                    "index": "2",
+                    "siglum": "df",
+                    "reading": "df",
+                    "original": "asdf",
+                    "rule_match": [
+                        "asdf"
+                    ],
+                    "t": "asdf"
+                },
+                {
+                    "index": "4",
+                    "siglum": "df",
+                    "reading": "df",
+                    "original": "asdf",
+                    "rule_match": [
+                        "asdf"
+                    ],
+                    "t": "asdf"
+                },
+                {
+                    "index": "6",
+                    "siglum": "df",
+                    "reading": "df",
+                    "original": "adsf",
+                    "rule_match": [
+                        "adsf"
+                    ],
+                    "t": "adsf",
+                    "marginale": {
+                        "marg_type": "section number",
+                        "loc": "marg_after",
+                        "marg_tx": "dsfdfasdf"
+                    }
+                }
+            ]
+        }
+    ]
+}

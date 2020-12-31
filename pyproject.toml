@@ -1,0 +1,33 @@
+[tool.briefcase]
+project_name = "TranscribEdIt"
+bundle = "org.dflood.transcribedit"
+version = "0.1"
+url = "https://transcribedit.dflood.org/transcribedit"
+license = "MIT license"
+author = 'David Flood, II'
+author_email = "davidfloodii@gmail.com"
+
+[tool.briefcase.app.transcribedit]
+formal_name = "TranscribEdIt"
+description = "a manuscript transcription tool for producing tokenized JSON transcription files"
+icon = "src/transcribedit/resources/transcribedit"
+sources = ['src/transcribedit']
+requires = []
+
+
+[tool.briefcase.app.transcribedit.macOS]
+requires = []
+
+[tool.briefcase.app.transcribedit.linux]
+requires = []
+system_requires = []
+
+[tool.briefcase.app.transcribedit.windows]
+requires = []
+
+# Mobile deployments
+[tool.briefcase.app.transcribedit.iOS]
+requires = []
+
+[tool.briefcase.app.transcribedit.android]
+requires = []
