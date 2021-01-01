@@ -12,7 +12,8 @@ formal_name = "TranscribEdIt"
 description = "a manuscript transcription tool for producing tokenized JSON transcription files"
 icon = "src/transcribedit/resources/transcribedit"
 sources = ['src/transcribedit']
-requires = []
+requires = ["PySide2",
+            "PySimpleGUIQt"]
 
 
 [tool.briefcase.app.transcribedit.macOS]

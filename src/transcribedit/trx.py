@@ -10,25 +10,6 @@ import transcribedit.tokenize_text as tt
 import transcribedit.PySimpleGUIQt as sg
 
 
-sg.LOOK_AND_FEEL_TABLE['Parchment'] = {'BACKGROUND': '#FFE9C6',
-                                        'TEXT': '#533516',
-                                        'INPUT': '#EAC8A3',
-                                        'TEXT_INPUT': '#2F1B0A',
-                                        'SCROLL': '#B39B73',
-                                        'BUTTON': ('white', '#C55741'),
-                                        'PROGRESS': ('#01826B', '#D0D0D0'),
-                                        'BORDER': 3, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
-                                        }
-sg.LOOK_AND_FEEL_TABLE['DarkMode'] = {'BACKGROUND': '#161D20',
-                                        'TEXT': '#039386',
-                                        'INPUT': '#32434B',
-                                        'TEXT_INPUT': '#89DDFF',
-                                        'SCROLL': '#B39B73',
-                                        'BUTTON': ('white', '#2E3437'),
-                                        'PROGRESS': ('#01826B', '#D0D0D0'),
-                                        'BORDER': 3, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
-                                        }
-
 def get_settings(main_dir: str):
     try:
         with open(f'{main_dir}/resources/settings.json', 'r') as file:
@@ -49,6 +30,8 @@ sg.set_options(font=settings['font'])
 if settings['theme'] == 'Grey':
     sg.theme('LightGrey2')
 else:
+    sg.LOOK_AND_FEEL_TABLE['Parchment'] = {'BACKGROUND': '#FFE9C6', 'TEXT': '#533516', 'INPUT': '#EAC8A3', 'TEXT_INPUT': '#2F1B0A', 'SCROLL': '#B39B73', 'BUTTON': ('white', '#C55741'), 'PROGRESS': ('#01826B', '#D0D0D0'), 'BORDER': 3, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0}
+    sg.LOOK_AND_FEEL_TABLE['DarkMode'] = {'BACKGROUND': '#161D20', 'TEXT': '#039386', 'INPUT': '#32434B', 'TEXT_INPUT': '#89DDFF', 'SCROLL': '#B39B73', 'BUTTON': ('white', '#2E3437'), 'PROGRESS': ('#01826B', '#D0D0D0'), 'BORDER': 3, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0}
     sg.theme(settings['theme'])
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(settings['dpi']) # for Windows users with high resolution (greater than 1080x1920) monitors.
