@@ -13,22 +13,22 @@ def load_token(index: str, verse: dict, siglum: str, window):
         window['-note-'].update(value=token['note'])
     else:
         window['-note-'].update(value='')
-    for brk in ['break_after', 'break_before', 'split']:
+    for i, brk in enumerate(['break_after', 'break_before', 'break_split']):
         if brk in token:
-            if token[brk] == 'lb':
-                window[f'-{brk}_num-'].update(value=token['lb_num'])
-                window[f'-{brk}-'].update(set_to_index=0)
-            elif token[brk] == 'pb':
-                window[f'-{brk}_num-'].update(value=token['pb_num'])
-                window[f'-{brk}-'].update(set_to_index=1)
-            elif token[brk] == 'cb':
-                window[f'-{brk}_num-'].update(value=token['cb_num'])
-                window[f'-{brk}-'].update(set_to_index=2)
-            else:
-                window[f'-{brk}_num-'].update(value=0)
+            window['break_place'].update(set_to_index=i)
+            window['break_num'].update(value=token[brk][1])
+            if token[brk][0] == 'line':
+                window['break_type'].update(set_to_index=0)
+            elif token[brk][0] == 'column':
+                window['break_type'].update(set_to_index=1)
+            elif token[brk][0] == 'page':
+                window['break_type'].update(set_to_index=2)
+            break
         else:
-            window[f'-{brk}-'].update(set_to_index=3)
-            window[f'-{brk}_num-'].update(value=0)
+            window['break_place'].update(set_to_index=3)
+            window['break_type'].update(set_to_index=3)
+            window['break_num'].update(value='')
+      
     if 'first_hand_rdg' in token:
         window['-first_hand_rdg-'].update(value=token['first_hand_rdg'])
     else:
@@ -83,12 +83,8 @@ def make_new_token(values, siglum_hand):
              "rule_match": rule_match,
              "t": values['-original-']}
 
-    for key in ['break_after', 'break_before', 'split']:
-        if values[f'-{key}-'] != None:
-            for k, z in zip(['line break', 'page break', 'column break'], ['lb', 'pb', 'cb']):
-                if values[f'-{key}-'] == k:
-                    token[key] = z
-                    token[f'{z}_num'] = values[f'-{key}_num-']
+    if values['break_place'] != None:
+        token[f'break_{values["break_place"]}'] = (values['break_type'], values['break_num'])
     if values['-corr_type-'] != None:
         token['corr_type'] = values['-corr_type-']
     if values['-corr_method-'] != None:

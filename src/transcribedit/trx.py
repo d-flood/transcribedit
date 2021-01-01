@@ -163,7 +163,7 @@ def submit_corrector_hand(verse_dict: dict, text: str, ref: str, siglum: str, wi
     return verse_dict
 
 def get_siglum_hand(values):
-    if values['-hand-'] != 'First':
+    if values['-hand-'] != '*':
         siglum = f'{values["-siglum-"]}{values["-hand-"]}'
     else:
         siglum = values['-siglum-']
@@ -231,17 +231,15 @@ def get_layout():
                      [sg.Radio('Gap After', 'gap', key='-gap_after-'), sg.Radio('Gap Before', 'gap', key='-gap_before-')],
                      [sg.Text('Gap Details'), sg.Input('', key='-gap_details-')]]
 
-    values_col = [[sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
-                  [sg.Text('Break After'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_after-'), sg.Spin([i for i in range(41)], key='-break_after_num-', size_px=(60, 40), initial_value=0)],
-                  [sg.Text('Break Before'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-break_before-'), sg.Spin([i for i in range(41)], key='-break_before_num-', size_px=(60, 40), initial_value=0)],
-                  [sg.Text('Split'), sg.Combo(['line break', 'page break', 'column break', None], readonly=True, size_px=(160, 40), key='-split-'), sg.Spin([i for i in range(41)], key='-split_num-', size_px=(60, 40), initial_value=0)],
+    values_col = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
+                  [sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
+                  [sg.Text('Break'), sg.Combo(['after', 'before', 'split', None], readonly=True, size_px=(100, 40), key='break_place', enable_events=True), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num', size_px=(70, 40))],
                   [sg.Text('Rule Match'), sg.Input('', key='-rule_match-')]]
 
-    values_col2 = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
-                  [sg.Text('Correction', justification='center')],
-                  [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-')],
-                  [sg.Text('Type'), sg.Combo(['deletion', 'addition', 'substitution', None], readonly=True, size_px=(170, 40), key='-corr_type-')],
-                  [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')]]
+    values_col2 = [[sg.Text('Correction', justification='center')],
+                   [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-')],
+                   [sg.Text('Type'), sg.Combo(['deletion', 'addition', 'substitution', None], readonly=True, size_px=(170, 40), key='-corr_type-')],
+                   [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')]]
     
     values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-', enable_events=True)],
                    [sg.Radio('left margin', 'marg', disabled=True, key='-l_marg-'), sg.Radio('right margin', 'marg', disabled=True, key='-r_marg-')], 
@@ -260,7 +258,7 @@ def get_layout():
             [sg.Button('<Prev'), sg.Text('Reference'), sg.Input('', key='-ref-'), 
                 sg.Button('Next>'), sg.Text('Witness Siglum'), 
                 sg.Input('', key='-siglum-'), sg.Text('Hand'), 
-                sg.Combo(['First', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, size_px=(160, 40), key='-hand-', enable_events=True),
+                sg.Combo(['*', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, size_px=(60, 40), key='-hand-', enable_events=True),
                 sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-')],
             [sg.Frame('Transcription', transcription_frame, visible=True)]]
 
@@ -310,7 +308,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             basetext_index = basetext_by_index(settings, basetext_index, event, window)
 
         elif event == 'Submit Verse':
-            if values['-hand-'] == 'First':
+            if values['-hand-'] == '*':
                 verse_dict = submit_verse(values['-transcription-'], values['-ref-'], values['-siglum-'], window, icon)
             elif verse_dict is not None:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
