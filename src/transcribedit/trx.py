@@ -213,7 +213,7 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
     return f'{wit_folder}/{ref}.json'
 
 def get_layout():
-    menu = [['File', ['Settings', '---', 'Exit']]]
+    menu = [['File', ['!Check for Updates', 'Settings', '---', 'Exit']]]
     
     submitted1, submitted2, submitted3, submitted4 = initial_verse_rows()
 
@@ -263,11 +263,12 @@ def get_layout():
             [sg.Frame('Transcription', transcription_frame, visible=True)]]
 
 def main():
+    version = 0.1
     layout = get_layout()
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)
-    window = sg.Window('Testing', layout, icon=icon)
+    window = sg.Window(f'transcripEdIt   v{version}', layout, icon=icon)
     basetext_index = None
     verse_dict = None
 
