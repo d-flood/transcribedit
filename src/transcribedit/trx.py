@@ -4,10 +4,10 @@ import os
 import pathlib
 import re
 # import PySimpleGUIWeb as sg
+import transcribedit.PySimpleGUIQt as sg
 import transcribedit.manage_token as mt
 from transcribedit.set_settings import set_settings
 import transcribedit.tokenize_text as tt
-import transcribedit.PySimpleGUIQt as sg
 
 
 def get_settings(main_dir: str):
@@ -139,16 +139,28 @@ def update_display_verse(verse_dict: dict, window, siglum, index: str):
     highlight_selected(window, f'word{index}')
     window['-hands-'].update(value=', '.join(hands))
     window['-transcription-'].update(value=verse_dict['text'])
+    try:
+        window['verse_note'].update(value=verse_dict['verse_note'])
+    except KeyError:
+        window['verse_note'].update(value='')
+    if 'verse_marginale' in verse_dict:
+        window['verse_marg_type'].update(value=verse_dict['verse_marginale']['type'])
+        window['verse_marg_loc'].update(values=['above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], value=verse_dict['verse_marginale']['loc'])
+        window['verse_marg_tx'].update(value=verse_dict['verse_marginale']['tx'])
+    else:
+        window['verse_marg_type'].update(value='')
+        window['verse_marg_tx'].update(value='')
+        window['verse_marg_loc'].update(set_to_index=0)
 
-def submit_verse(verse: str, ref: str, siglum: str, window, icon):
+def submit_verse(values: dict, window, icon):
     response = okay_or_cancel('Confirm transcription submission. This will overwrite all previously saved verse data.', 'Confirm Submission', icon)
     if response == 'Cancel':
         return
-    if '' in [verse, ref, siglum]:
+    if '' in [values['-transcription-'], values['-ref-'], values['-siglum-']]:
         okay_popup('Transcription, Reference, and Siglum fields must be filled.', 'Forgetting something?', icon)
         return
-    tokenized_verse = tt.orig_to_dict(verse, siglum, ref)
-    update_display_verse(tokenized_verse, window, siglum, '2')
+    tokenized_verse = tt.orig_to_dict(values)
+    update_display_verse(tokenized_verse, window, values['-siglum-'], '2')
     return tokenized_verse
 
 def submit_corrector_hand(verse_dict: dict, text: str, ref: str, siglum: str, window, icon):
@@ -195,6 +207,17 @@ def set_marg_radios(window, setting: bool):
     window['-marg_above-'].update(disabled=setting)
     window['-marg_after-'].update(disabled=setting)
 
+def update_verse_and_marg(verse_dict: dict, values: dict):
+    verse_dict['text'] = values['-transcription-']
+    verse_dict['verse_note'] = values['verse_note']
+    if values['verse_marg_type'] != '':
+        verse_dict['verse_marginale'] = {
+            'type': values['verse_marg_type'], 
+            'loc': values['verse_marg_loc'], 
+            'tx': values['verse_marg_tx']}
+    sg.popup_quick_message('Verse text and/or verse note updated')
+    return verse_dict
+
 def get_metadata(siglum):
     return {'_id': siglum, 'siglum': siglum}
 
@@ -202,11 +225,13 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
     ref = ref.replace(':', '.')
     ref = ref.replace(' ', '')
     wits_dir = settings['wits_dir']
+    if wits_dir == '':
+        return None
     wit_folder = f'{wits_dir}/{siglum}'
     if not os.path.exists(wit_folder):
         os.makedirs(wit_folder, exist_ok=True)
     with open(f'{wit_folder}/{ref}.json', 'w', encoding='utf-8') as file:
-        json.dump(verse_dict, file)
+        json.dump(verse_dict, file, ensure_ascii=False)
     if not os.path.exists(f'{wit_folder}/metadata.json'):
         with open(f'{wit_folder}/metadata.json', 'w') as file:
             json.dump(get_metadata(siglum), file, indent=4)
@@ -222,7 +247,7 @@ def get_layout():
                        submitted3,
                        submitted4]
 
-    note_col = [[sg.Text('Note')],
+    note_col = [[sg.Text('Word Note')],
                [sg.Multiline(size=(None, 8), key='-note-')]]
 
     main_info_col = [[sg.Text('Index'), sg.Input('', key='-index-', disabled=True, size_px=(170, 40))],
@@ -239,28 +264,36 @@ def get_layout():
     values_col2 = [[sg.Text('Correction', justification='center')],
                    [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-')],
                    [sg.Text('Type'), sg.Combo(['deletion', 'addition', 'substitution', None], readonly=True, size_px=(170, 40), key='-corr_type-')],
-                   [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')]]
-    
-    values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-', enable_events=True)],
-                   [sg.Radio('left margin', 'marg', disabled=True, key='-l_marg-'), sg.Radio('right margin', 'marg', disabled=True, key='-r_marg-')], 
-                   [sg.Radio('after word', 'marg', disabled=True, key='-marg_after-'), sg.Radio('above word', 'marg', disabled=True, key='-marg_above-')],
-                   [sg.Multiline('', key='-marg_tx-')],
+                   [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')],
                    [sg.Button('Submit Edits')]]
+    
+    values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-')],
+                   [sg.Combo(['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom', 'None'], default_value='None', size_px=(170, 40), readonly=True, key='marg_loc')],
+                #    [sg.Radio('left margin', 'marg', disabled=True, key='-l_marg-'), sg.Radio('right margin', 'marg', disabled=True, key='-r_marg-')], 
+                #    [sg.Radio('after word', 'marg', disabled=True, key='-marg_after-'), sg.Radio('above word', 'marg', disabled=True, key='-marg_above-')],
+                   [sg.Button('ϛ'), sg.Button('Ϙ'), sg.Button('⁘ +')],
+                   [sg.Multiline('', key='-marg_tx-')]]
 
     edit_kv_frame = [[sg.Column(note_col), sg.Column(main_info_col), sg.Column(values_col), sg.Column(values_col2), sg.Column(values_col3)]]
 
-    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save')],
-                            [sg.Multiline(size=(None, 3), key='-transcription-')]]
+    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
+                            [sg.Multiline('', key='-transcription-', size_px=(1700, 400), font=('Cambria', 14))]]
+
+    verse_note_frame = [[sg.Text('Verse Notes', justification='center')],
+                        [sg.Multiline('', key='verse_note', size_px=(400, 150), font=('Cambria', 14))],
+                        [sg.Text('Marginale Type', size_px=(180, 40)), sg.Input('', key='verse_marg_type', size_px=(220, 40))],
+                        [sg.Combo(['above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', size_px=(400, 40), readonly=True)],
+                        [sg.Multiline('', size_px=(405, 150), key='verse_marg_tx')]]
 
     return [[sg.Menu(menu)],
-            [sg.Frame('Select Word to Edit', submitted_frame)],
-            [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-')],
+            [sg.Frame('', submitted_frame, key='submitted_frame')],
+            [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-', pad=(0,0))],
             [sg.Button('<Prev'), sg.Text('Reference'), sg.Input('', key='-ref-'), 
                 sg.Button('Next>'), sg.Text('Witness Siglum'), 
                 sg.Input('', key='-siglum-'), sg.Text('Hand'), 
                 sg.Combo(['*', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, size_px=(60, 40), key='-hand-', enable_events=True),
                 sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-')],
-            [sg.Frame('Transcription', transcription_frame, visible=True)]]
+            [sg.Frame('Transcription', transcription_frame, visible=True, pad=(0,0)), sg.Frame('', verse_note_frame, pad=(0,0))]]
 
 def main():
     version = 0.1
@@ -279,10 +312,12 @@ def main():
         
         elif event == 'Show Editing Options':
             window['-edit_frame-'].update(visible=True)
+            window['submitted_frame'].update(visible=True)
 
         elif event == 'Hide Editing Options':
             window['-edit_frame-'].update(visible=False)
-            # window.visibility_changed()
+            window['submitted_frame'].update(visible=False)
+            window.visibility_changed()
 
         elif event == 'Load Basetext':
             if values['-ref-'] == '':
@@ -310,7 +345,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event == 'Submit Verse':
             if values['-hand-'] == '*':
-                verse_dict = submit_verse(values['-transcription-'], values['-ref-'], values['-siglum-'], window, icon)
+                verse_dict = submit_verse(values, window, icon)
             elif verse_dict is not None:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
 
@@ -327,17 +362,21 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, siglum)
                 update_display_verse(verse_dict, window, siglum, values['-index-'])
 
-        elif event == '-marg_type-':
-            if values['-marg_type-'] != '':
-                set_marg_radios(window, False)
-            else:
-                set_marg_radios(window, True)
+        # elif event == '-marg_type-':
+        #     if values['-marg_type-'] != '':
+        #         set_marg_radios(window, False)
+        #     else:
+        #         set_marg_radios(window, True)
 
         elif event == 'Save':
             if verse_dict is None:
                 okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
                 continue
             saved_path = save_tx(verse_dict, values['-siglum-'], settings, values['-ref-'])
+            if saved_path is None:
+                okay_popup('The witnesses directory has not been set.\n\
+Please set your witnesses output folder in settings by navigating to File>Settings.', 'Witnesses Directory not Set', icon)
+                continue
             okay_popup(f'JSON formatted transcription file was succesfully saved to\n\
 {saved_path}', 'Saved!', icon)
 
@@ -347,6 +386,25 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event == 'Settings':
             settings = set_settings(settings, main_dir, icon)
+
+        elif event == '-symbol-' and values['-symbol-'] != 'Symbol':
+            if values['-symbol-'] == 'underdot':
+                window['-transcription-'].update(value=f'\u0323', append=True)
+                window['-symbol-'].update(set_to_index=0)
+            else:
+                window['-symbol-'].update(set_to_index=0)
+                window['-transcription-'].update(value=f'{values["-symbol-"]}', append=True)
+            window['-transcription-'].set_focus()
+
+        elif event in ['⁘ +', 'ϛ', 'Ϙ']:
+            window['-marg_tx-'].update(value=f'{event}', append=True)
+            window['-marg_tx-'].set_focus()
+
+        elif event == 'Update Verse Text':
+            if verse_dict is not None:
+                verse_dict = update_verse_and_marg(verse_dict, values)
+            else:
+                sg.popup_quick_message('First submit or load a verse')
 
         # print(event, values)
     window.close()

@@ -63,14 +63,16 @@ def load_token(index: str, verse: dict, siglum: str, window):
     else:
         window['-image_id-'].update(value='')
     if 'marginale' in token:
+        window['marg_loc'].update(values=['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], value=token['marginale']['loc'].replace('_', ' '))
         window['-marg_type-'].update(value=token['marginale']['marg_type'])
-        for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
-            if loc == token['marginale']['loc']:
-                window[f'-{loc}-'].update(value=True)
+        # for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
+        #     if loc == token['marginale']['loc']:
+        #         window[f'-{loc}-'].update(value=True)
         window['-marg_tx-'].update(value=token['marginale']['marg_tx'])
     else:
         window['-marg_type-'].update(value='')
         window['-marg_tx-'].update(value='')
+        window['marg_loc'].update(set_to_index=8)
 
 def make_new_token(values, siglum_hand):
     rule_match = values['-rule_match-'].replace(' ', '').split(',')
@@ -81,7 +83,7 @@ def make_new_token(values, siglum_hand):
              "reading": siglum,
              "original": values['-original-'],
              "rule_match": rule_match,
-             "t": values['-original-']}
+             "t": values['-original-'].replace('|', '')}
 
     if values['break_place'] != None:
         token[f'break_{values["break_place"]}'] = (values['break_type'], values['break_num'])
@@ -100,11 +102,11 @@ def make_new_token(values, siglum_hand):
             token[v] = values[f'-{v}-']
     if values['-marg_type-'] != '':
         token['marginale'] = {'marg_type': values['-marg_type-'],
-                              'loc': '',
-                              'marg_tx': ''}
-        for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
-            if values[f'-{loc}-'] is True:
-                 token['marginale']['loc'] = loc
-                 break
-        token['marginale']['marg_tx'] = values['-marg_tx-']
+                              'loc': values['marg_loc'].replace(' ', '_'),
+                              'marg_tx': values['-marg_tx-']}
+        # for loc in ['l_marg', 'r_marg', 'marg_after', 'marg_above']:
+        #     if values[f'-{loc}-'] is True:
+        #          token['marginale']['loc'] = loc
+        #          break
+        # token['marginale']['marg_tx'] = values['-marg_tx-']
     return token

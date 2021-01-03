@@ -8,6 +8,8 @@ def text_to_witness_dict(text: str, siglum: str):
     text = text.replace('\n', ' ')
     index = 2
     for word in text.split():
+        if word in ['·', ',', '.', ':', '※', '⁘', '+']:
+            continue
         orig_word = word
         if '|' in word:
             word = word.replace('|', '')
@@ -20,16 +22,22 @@ def text_to_witness_dict(text: str, siglum: str):
         index += 2
     return witness
 
-def orig_to_dict(text: str, siglum: str, ref: str):
+def orig_to_dict(values: dict):
     return {
-        '_id': f'{siglum}_{ref}',
-        'transcription': siglum,
-        'transcription_siglum': siglum,
-        'siglum': siglum,
-        'context': ref,
-        'n': ref,
-        'text': text,
-        'witnesses': [text_to_witness_dict(text, siglum)]
+        '_id': f'{values["-siglum-"]}_{values["-ref-"]}',
+        'transcription': values["-siglum-"],
+        'transcription_siglum': values["-siglum-"],
+        'siglum': values["-siglum-"],
+        'context': values["-ref-"],
+        'n': values["-ref-"],
+        'text': values["-transcription-"],
+        'verse_note': values["verse_note"],
+        'verse_marginale': {'type': values['verse_marg_type'], 
+                            'loc': values['verse_marg_loc'], 
+                            'tx': values['verse_marg_tx']},
+        'witnesses': [
+            text_to_witness_dict(values["-transcription-"], values['-siglum-'])
+            ]
             }
 
 def add_hand_to_dict(verse_dict: dict, text: str, siglum_hand):
@@ -37,13 +45,16 @@ def add_hand_to_dict(verse_dict: dict, text: str, siglum_hand):
     verse_dict['witnesses'].append(hand_dict)
     return verse_dict
 
-def update_witness_dict(orig: dict, text: str, siglum: str):
-    for i, wit in enumerate(orig['witnesses']):
+def update_witness_dict(verse_dict: dict, text: str, siglum: str, values: dict):
+    verse_dict['verse_marginale'] = {'type': values['verse_marg_type'], 
+                                     'loc': values['verse_marg_loc'], 
+                                     'tx': values['verse_marg_tx']}
+    for i, wit in enumerate(verse_dict['witnesses']):
         if wit['id'] == siglum:
-            orig['witnesses'][i] = text_to_witness_dict(text, siglum)
-            return orig
-    orig['witnesses'].append(text_to_witness_dict(text, siglum))
-    return orig
+            verse_dict['witnesses'][i] = text_to_witness_dict(text, siglum)
+            return verse_dict
+    verse_dict['witnesses'].append(text_to_witness_dict(text, siglum))
+    return verse_dict
 
 def update_token(token: dict, index: int, verse: dict, siglum: str):
     loc_index = (index / 2) - 1

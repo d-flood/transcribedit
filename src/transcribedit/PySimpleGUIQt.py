@@ -1,24 +1,18 @@
 #!/usr/bin/python3
-# from PySimpleGUI import Column
-
-version = __version__ = "0.35.0.18 Unreleased\nMassive update of docstrings (thanks nngogol), default for slider tick interval set automatically now, margins added to Window but not yet hooked up, VSeparator added (spelling error), added Radio.reset_group and removed clearing all when one of them is cleared (recent change), added default key for one_line_progress_meter, auto-add keys to tables & trees, InputText element gets new disabled-readonly foreground and background color settings and also a readonly parameter, InputText gets border_width parameter, fixed up some docstrings, popup gets new image and any_key_closes parms, input type popups also get image parameter, error checks for trying to manipulate a window prior to finalize, added a dummy Element.expand method, added theme_add_new, added Window.set_title, updated to the latest themes from tktiner port, big styles update (thanks nngogol!), more Styles work, changed popup text layout to match tkinter port, fixed vertical alignment in row, added margin to some elements, renamed styles related variables, window margin support but be careful"
-
-__version__ = version.split()[0]    # For PEP 396 and PEP 345
-
-# The shortened version of version
-try:
-    ver = version.split(' ')[0]
-except:
-    ver = ''
-
+version = __version__ = "0.35.0 Released 6-Jun-2020"
 
 port = 'PySimpleGUIQt'
 
-import sys, datetime, textwrap, pickle, random, warnings, time
-try:        # Because Raspberry Pi is still on 3.4....it's not critical if this module isn't imported on the Pi
-    from typing import List, Any, Union, Tuple, Dict    # because this code has to run on 2.7 can't use real type hints.  Must do typing only in comments
-except:
-    print('*** Skipping import of Typing module. "pip3 install typing" to remove this warning ***')
+import sys
+import types
+import datetime
+import textwrap
+import pickle
+import base64
+import calendar
+from random import randint
+import warnings
+
 
 ######           #####                                       #####   #     #  ###   #####
 #     #  #   #  #     #  #  #    #  #####   #       ######  #     #  #     #   #   #     #  #####
@@ -27,16 +21,13 @@ except:
 #          #          #  #  #    #  #####   #       #       #     #  #     #   #   #   # #    #
 #          #    #     #  #  #    #  #       #       #       #     #  #     #   #   #    #     #
 #          #     #####   #  #    #  #       ######  ######   #####    #####   ###   #### #    #
-#
-# Copyright 2020 PySimpleGUI.org
-
 
 from PySide2.QtWidgets import QApplication, QLabel, QWidget, QLineEdit, QComboBox, QFormLayout, QVBoxLayout, QHBoxLayout, QListWidget, QDial, QTableWidget
 from PySide2.QtWidgets import QSlider, QCheckBox, QRadioButton, QSpinBox, QPushButton, QTextEdit, QMainWindow, QDialog, QAbstractItemView
 from PySide2.QtWidgets import QSpacerItem, QFrame, QGroupBox, QTextBrowser, QPlainTextEdit, QButtonGroup, QFileDialog, QTableWidget, QTabWidget, QTabBar, QTreeWidget, QTreeWidgetItem, QLayout, QTreeWidgetItemIterator, QProgressBar
 from PySide2.QtWidgets import QTableWidgetItem, QGraphicsView, QGraphicsScene, QGraphicsItemGroup, QMenu, QMenuBar, QAction, QSystemTrayIcon, QColorDialog
 from PySide2.QtGui import QPainter, QPixmap, QPen, QColor, QBrush, QPainterPath, QFont, QImage, QIcon
-from PySide2.QtCore import Qt, QEvent, QSize
+from PySide2.QtCore import Qt,QProcess, QEvent, QSize
 import PySide2.QtGui as QtGui
 import PySide2.QtCore as QtCore
 import PySide2.QtWidgets as QtWidgets
@@ -45,16 +36,21 @@ using_pyqt5 = False
 
 
 
+"""
+    The QT version if PySimpleGUI.
+    Still being developed.  Very limited features.  Been in development for less than 2 days so don't expect much!!
+    
+    So far can interact with the basic Widgets and get button clicks back.  Can't yet read which button caused the event.
+"""
+
 DEFAULT_BASE64_ICON = b'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'
-
-
-FACE_PALM = b'iVBORw0KGgoAAAANSUhEUgAAAEkAAAA8CAMAAAAdQmecAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURQAAAB8SDx4UEiAUDyAUEiMZFSUbGSsUEy8aFiwbGTsUFTkdICwiHTIjHDQrHzsiGysjIjIlIDMqIzMsKjsgIzotID0uKT01IzszMUkYHE0ZIFkbKEQhHkUqH0sgHUUgI0MtIkUoKEsmIEwqIkwqL00rM0I1I0s1JEswKE04J0w7LUc9OVYpJ1omMVM0JVQ1K1I4JVU7KlszK1k6J1s7KVw4NGEdLmQeMWghNmE5LWQ4NXIiPWs2RHkkQnAzRVRENVNDOF1ENFxEOVpKOWNDM2NHPWNMPGxFOWxKPG9QPnJKPHVQP05HRFJMSltUUWpLQ2lUQ2NcWndNQndIU3JUQ3JUSHRZTHxSRHxVSHxZSnlaVH1YYmZgX39gVmZjYnZran14doFURoNWSYNbTYNeUoleUItbaYRgT4VhU4JiWIVoXIpjVIxlWo1oVo1pWpFiVpFlWZJsXZRxX4JmZYVsY4trY4pzaoN9e5NtYpRtaJltY5ZxYpRyaZpzZZx1ap14a5N4eJx1cJp3eJ15cZp6eqB2a6J6baN8cqJ7eax9cah+epx7hImBf5uBeqWAdKOCe6qCdKqDequJfbKJfY2EgpmIiZqVk52Zk6SBhKaFiKyDgqqFiayJgqyNi6aLkayNlKGQi6uRja+QlqySm6qZlLKMhLKOi7SRi76Th7qTi7KTk7KVm7KYk7SZm7iWk7yZk7ucm7Sco7ScqbqeorOfsK2knrmhnKukoqyop7GrqrqhpLqlq7mup7urqrSosbKuubqjsrymubyps7qqub6xrbSxsLizvbe1wr68ycKYi8OcmsCmo8KmqcGup8Ooq8qqqcersMGvv8yutMKxu8uwtM2zusy+v9G3usCwwsS0yca8xsW7y82/x8m9ysm90Ne8wMjAvMPCxsLAyc3Ax8vAy8/IzMbD0c3F08zK2NPLx9DJztnBydLO09LL2tPS19TS29rU29bU4dnT5NzV6NvZ4+Hf5uDd6+Pi7eXj8ejl9Ozp9/Lw+wAAAAAAAAAAAAAAAErQjXwAAAEAdFJOU////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wBT9wclAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAHU0lEQVRYR5WWf1gbZx3A8bw2y7nJVq00ZM9Eq63t0o3QFNKkrLbjoRjXsWFHCI+T0gNNe2nWm4Ndm9xFTLmj1UFONsUU1s2aZRRxdP7otNZN1Omc1inTdbad06danzlkVoR2/hG/7w8gNG/Y9iE/uPf9vp/7vt/37r0UZPLx34nxiYmJNybp4VuSxzQ9MXn5zempqelLlybfpotteu31ifFzfzp7/sL45PT09MS/aPOCME1jZ8+fGxs9Njw0fGLswuT01D/+SjsWgmU6fnJs7IUTx7410N8/MDx64eKlqV++DRXD9M2BkZOnfjicTvV0d/f0Hx09f/HNf//iL7QzP7mmn0XN9BMjR9PpfhOpkkdHz0z97+9PT9DuvOSa7gvHus2vYEzT6E4MDP10/PKlM0/T7rzkmoLBeyORWMwwzf6UaZowvydPX7z8nzPP0v585JhO7pIkWZbvVXUzlUomzYNmcui7L49fvPDs6zQiDzmmr9UHg7vDu8MRVTcOHESq5KEjz7z8yitnfkwj8pBr2njHNjEo7ZbliGFAQsk+eB155vTpc6f/RkPY5JiOr7i1uh5UYUVROw4ehEolk1193zj2k9+NLpxUbsWXrt5YfdfnpDAUS9UgLaCrq2/g6JETT9IINrmmJStWb9wUCKK6K0h1wDCMDs1IHjr8Tk23F63aeOsdooSXUNU6O7QOTdM7937x0NAbNIRJrumrS4tWb64OiFKrJEshWdnXqWr7QqGO/fuHztIQJrmmzKKiFauc9aLYIkp7xHvkfXtCLSG5Y+TU1w8foRFMGKat7y1asbLaH/CLkNeO5h2trZJk/Oq3I/uHh/9IQ1gwTD+4qnBpkbPK5xf9zTua/c1+fyT1WLLnvi+8MPwoDWHBMEWDjuuFpc5P+Hz3iM3Ndb5mPZVOKfU93xnqj/2GxjDINb3q8PicJYUly2vkutZWURR1PdErtwz8+vloQPk+DWLAyMnjWb58ZUnhrsf3SJ9s8fl1TVWlwODzI/HaxrYFpscw1fscxY7Slc7Yc5LkatDhTpZE3YzH133+1EsP0RgGDNOPqm74cJWrtHRbond9Q0LVdSmsmWa4rf3Ffw4/QmMYMEyZ9rIy502u0hpDlRK6HtNN40BCjI68+IeBtndWp0xmU5VrpWttFdqiensff27QjIuxwf6+/Y13v0YjGDBNr25yrV3rqoL7t7fX1A/0Girs6Eqw7fcPfJlGMGCaMt+rdt7k3Natqwkjpmnm4BNpQ27o+fNLD7yL4xYt+/RxGjYPtimTKSxxqYluEOm63psaTBtB89tDfe2LeY7neW7xnT+ncXPkMT109aoaJaYaugY7CmxSj6UHU12haNPV4EFw3I00cpY8psWLVlcHIxFdVTUtFod9Lm0aO+/adSMVAZy1icZSmKb738fzSzY1yJCRYcBGF48qWpdW11j/AapBQMW203gMw7SVRG4ORBKaqsXjWjSqaRGldkvV5utIF8JqFazWB+kQRI5pK4eLyvPVElQbyqRF92rxDll0rK+pXQRd8LK+/6MbNtzidrvXHKOjgCtMTVTD8++uDet6J1RJaVOie5XglrK6xlrUYf3QOo8HLG6v1+uuOEwHXmHajs45w05Fhx3c0JRQOBRUAi7P+pprIJuPrHHY7cXwZ3eAraJ8Nqss01NLqANzTbumxLSIrijhnTvDQWepq+x6oVAQBAuCh7dgs9sryj10dJbpttmJYT7eDlWOaJEwiO5uuRlJLNDMcSgK3lBOjkeyE3Q8NW1fNk8D1WiD9YJnZ1gOB1sCH0MK2oO/LYIF0gO3RWgkBmJ6cG51yRk5vkbR1IgcDisxWWwoIX0ILBAEm2AjCPx7sIeYbpvLx3odmgLPCaFIREY/WGDnrYOM5sAqUNgJNkEgImRaTGN44YPF0AFYhJsDIXicS/I+EC2n3QBHc7LZYO0q0KXgtttmTdfijDhLMQAiGxxYINK3Ax6ccqcq3jCzVrBaWAKdOKNyckk56N5esJ3UBqLQrAGYHg531CGV5ENtuAEDuSDWVKCMvN5Kb6X7s9R0O8poZvZ4FB0n2MrqGhr8vjLSij5JnYnMDSpIqbLS66amZbOiOSB9PNzmqdtSVVhL2rAcXtCHTeVIVQl4yfQKrs0WoWuNDKLp2dZ5eCvVzkGSmlWRpMCEhtORxIqj8TEBH88ja4IoKfxrqAC2wbmxUG0O7id6NAM+no+9GMuo6hZs+gxZKQQaRTPMFjFMUCuaFlo/Mr2CJkgJReNPfIFfmRM+ZIBVFfhS+BLOCZWb3C7kPofLEkM0CNqQy4zKuwGZ7iTRWIURIPW3mt0MMyo0vYL7s64luCt4Hu6ZeR4EHcgAuaBYcJ0XZPATAC0ampyAJ0fHz0IGZTPXiFTgQiYyJwAnh+pNd4QsZrcjgDYB5Bir7BvAhB5vKCvUZ+F4vMQ4cB54EP0/C2ik9/TDBZmnyG6BGqHuWJR9XvqdD2yCXcq+Dna6JtpIYJ15QWB+5W6v+1P/B0gPXHqaGwimAAAAAElFTkSuQmCC'
 
 
 g_time_start = 0
 g_time_end = 0
 g_time_delta = 0
 
+import time
 
 
 def TimerStart():
@@ -92,7 +88,7 @@ def TimerStop():
 DEFAULT_WINDOW_ICON = DEFAULT_BASE64_ICON
 DEFAULT_ELEMENT_SIZE = (250, 22)  # In PIXELS
 DEFAULT_BUTTON_ELEMENT_SIZE = (80, 25 )  # In PIXELS
-DEFAULT_MARGINS = (0,0)   # For Qt, use a Column element with padding to get same effect as tkinter port
+DEFAULT_MARGINS = (10, 5)  # Margins for each LEFT/RIGHT margin is first term
 DEFAULT_ELEMENT_PADDING = (4, 2)  # Padding between elements (row, col) in pixels
 # DEFAULT_ELEMENT_PADDING = (0, 0)  # Padding between elements (row, col) in pixels
 DEFAULT_PIXELS_TO_CHARS_SCALING = (10,35)      # 1 character represents x by y pixels
@@ -130,7 +126,6 @@ OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR = ('white', BLUES[0])  # Colors should never b
 
 
 CURRENT_LOOK_AND_FEEL = 'DarkBlue3'
-# CURRENT_LOOK_AND_FEEL = 'Dark Red'
 
 DEFAULT_ERROR_BUTTON_COLOR = ("#FFFFFF", "#FF0000")
 DEFAULT_BACKGROUND_COLOR = None
@@ -160,7 +155,7 @@ RELIEF_TICK_POSITION_BELOW = 'below'
 RELIEF_TICK_POSITION_LEFT = 'left'
 RELIEF_TICK_POSITION_RIGHT = 'right'
 
-DEFAULT_PROGRESS_BAR_COMPUTE = ('#000000', '#000000') # Means that the progress bar colors should be computed from other colors
+
 DEFAULT_PROGRESS_BAR_COLOR = (GREENS[0], '#D0D0D0')  # a nice green progress bar
 DEFAULT_PROGRESS_BAR_COLOR_OFFICIAL = (GREENS[0], '#D0D0D0')  # a nice green progress bar
 DEFAULT_PROGRESS_BAR_SIZE = (200, 20)  # Size of Progress Bar (characters for length, pixels for width)
@@ -172,7 +167,7 @@ DEFAULT_METER_ORIENTATION = 'Horizontal'
 DEFAULT_SLIDER_ORIENTATION = 'vertical'
 DEFAULT_SLIDER_BORDER_WIDTH = 1
 
-DEFAULT_SLIDER_RELIEF = RELIEF_TICK_POSITION_BOTH_SIDES
+DEFAULT_SLIDER_RELIEF = 'flat'
 DEFAULT_FRAME_RELIEF = 'groove'
 
 DEFAULT_LISTBOX_SELECT_MODE = 'extended'
@@ -238,7 +233,6 @@ EVENT_SYSTEM_TRAY_MESSAGE_CLICKED = '__MESSAGE_CLICKED__'
 MENU_KEY_SEPARATOR = '::'
 MENU_DISABLED_CHARACTER = '!'
 
-SUPPRESS_ERROR_POPUPS = False
 
 
 # ====================================================================== #
@@ -308,8 +302,6 @@ POPUP_BUTTONS_OK_CANCEL = 4
 POPUP_BUTTONS_OK = 0
 POPUP_BUTTONS_NO_BUTTONS = 5
 
-# def apply_new_font(css_dict, font_string):
-#     return css_dict.update({k.strip().replace('_', '-') : v.strip() for k,v in font_string.replace('\n', '').split(';')})
 
 # ---------------------------------------------------------------------- #
 # Cascading structure.... Objects get larger                             #
@@ -323,35 +315,7 @@ POPUP_BUTTONS_NO_BUTTONS = 5
 # ------------------------------------------------------------------------- #
 class Element():
     def __init__(self, elem_type, size=(None, None), auto_size_text=None, font=None, background_color=None, text_color=None,
-                 key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None, None), metadata=None):
-        """
-        :param elem_type: ???
-        :type elem_type: ???
-        :param size: w=characters-wide, h=rows-high
-        :type size: Tuple[int, int]  (width, height)
-        :param auto_size_text: True if the Widget should be shrunk to exactly fit the number of chars to show
-        :type auto_size_text: bool
-        :param font: specifies the font family, size, etc (see docs for exact formats)
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of background. Can be in #RRGGBB format or a color name "black"
-        :type background_color: (str)
-        :param text_color: element's text color. Can be in #RRGGBB format or a color name "black"
-        :type text_color: (str)
-        :param key: Identifies an Element. Should be UNIQUE to this window.
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element (Default = True)
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
+                 key=None, pad=None, tooltip=None, visible=True, size_px=(None, None), metadata=None):
 
         if size_px != (None, None):
             self.Size = size_px
@@ -387,9 +351,6 @@ class Element():
         self.Visible = visible
         self.metadata = metadata                # type: Any
         self.row_frame = None                   # type: QHBoxLayout
-        self.qt_styles = []                     # type: List[QtStyle]
-        self.Widget = None                      # type: QWidget
-
 
 
     def _FindReturnKeyBoundButton(self, form):
@@ -423,91 +384,24 @@ class Element():
         if button_element is not None:
             button_element._ButtonCallBack()
 
-    def _widget_was_created(self):
-        """
-        Determines if a Widget was created for this element.
-
-        :return: True if a Widget has been created previously (Widget is not None)
-        :rtype: (bool)
-        """
-        if self.Widget is not None:
-            return True
-        else:
-            warnings.warn('You cannot Update element with key = {} until the window has been Read or Finalized'.format(self.Key), UserWarning)
-            if not SUPPRESS_ERROR_POPUPS:
-                popup_error('Unable to complete operation on element with key {}'.format(self.Key),
-                    'You cannot perform operations (such as calling update) on an Element until Window is read or finalized.',
-                         'Adding a "finalize=True" parameter to your Window creation will likely fix this.', image=_random_error_icon())
-            return False
-
 
     def Update(self, widget, background_color=None, text_color=None, font=None, visible=None):
-        if not self._widget_was_created():
-            return
-
-        a_style = self.qt_styles[0]
-        # print(f'a_style = {a_style}')
-        if font is not None:  #= apply_new_font(css_props_dict, create_style_from_font(font))
-            a_style['font'] = create_style_from_font(font)
+        style = str(widget.styleSheet())
+        add_brace = False
+        if len(style) != 0 and style[-1] == '}':
+            style = style[:-1]
+            add_brace = True
+        if font is not None:
+            style += create_style_from_font(font)
         if text_color is not None:
-            a_style['color'] = text_color
+            style += ' color: %s;' % text_color
             self.TextColor = text_color
         if background_color is not None:
-            a_style['background-color'] = background_color
-            self.BackgroundColor = background_color
-
-        # print(f'a_style = {a_style}')
-        widget.setStyleSheet(a_style.build_css_string())
+            style += 'background-color: %s;' % background_color
+        if add_brace:
+            style += '}'
+        widget.setStyleSheet(style)
         set_widget_visiblity(widget, visible)
-
-
-    def set_stylesheet(self, stylesheet):
-        """
-        Sets the stylesheet for a Qt Widget
-        :param stylesheet: Stylesheet (string) to set stylesheet to
-        :type stylesheet: (str)
-        """
-        try:
-            self.Widget.setStyleSheet(stylesheet)
-        except Exception as e:
-            print('** Error Setting Stylesheet **', e)
-
-    def get_stylesheet(self):
-        """
-        Returns the stylesheet for element's associated Qt Widget
-        :return: stylesheet
-        :rtype: (str)
-        """
-        stylesheet = ''
-        try:
-            stylesheet = self.Widget.styleSheet()
-        except Exception as e:
-            print('** Error Setting Stylesheet **', e)
-
-        return stylesheet
-
-    update = Update
-
-    # ---------------------------------- DUMMY METHODS - They don't do anything! ----------------------------------
-
-    # These methods are here for porting purposes only.  They are meant to allow you to change your import statement
-    # from PySimpleGUI to PySimpleGUIQt and still be able to run your program.
-
-    def expand(self, expand_x=False, expand_y=False, expand_row=True):
-        """
-        WARNING - NOT USED IN PySimpleGUIQt port. Provided as dummy method
-
-        :param expand_x: If True Element will expand in the Horizontal directions
-        :type expand_x: (bool)
-        :param expand_y: If True Element will expand in the Vertical directions
-        :type expand_y: (bool)
-        :param expand_row: If True the row containing the element will also expand. Without this your element is "trapped" within the row
-        :type expand_row: (bool)
-        :return: None
-        :rtype: None
-        """
-
-        return
 
 
     def __call__(self, *args, **kwargs):
@@ -519,7 +413,7 @@ class Element():
                     Then you can call the Update method for that element by writing:
                     window.FindElement('T')('new text value')
 
-
+        :param args:
         :param kwargs:
         :return:
         """
@@ -527,67 +421,21 @@ class Element():
 
 
 
-    update = Update
-
-
 # ---------------------------------------------------------------------- #
 #                           Input Class                                  #
 # ---------------------------------------------------------------------- #
 class InputText(Element):
     def __init__(self, default_text='', size=(None,None), disabled=False, password_char='',
-                 justification=None, background_color=None, text_color=None, font=None, tooltip=None, disabled_readonly_background_color=None, disabled_readonly_text_color=None,
-                 change_submits=False, enable_events=False, readonly=False, border_width=None,
-                 do_not_clear=True, key=None, k=None, focus=False, pad=None, visible=True, size_px=(None,None), metadata=None):
-        """
+                 justification=None, background_color=None, text_color=None, font=None, tooltip=None,
+                 change_submits=False, enable_events=False,
+                 do_not_clear=True, key=None, focus=False, pad=None, visible=True, size_px=(None,None), metadata=None):
+        '''
         Input a line of text Element
-        :param default_text: Text initially shown in the input box as a default value(Default value = '')
-        :type default_text: (str)
-        :param size: w=characters-wide, h=rows-high
-        :type size: Tuple[int, int]  (width, height)
-        :param disabled: set disable state for element (Default = False)
-        :type disabled: (bool)
-        :param password_char: Password character if this is a password field (Default value = '')
-        :type password_char: (char)
-        :param justification: justification for data display. Valid choices - left, right, center
-        :type justification: (str)
-        :param background_color: color of background in one of the color formats
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param disabled_readonly_background_color: If state is set to readonly or disabled, the color to use for the background
-        :type disabled_readonly_background_color: (str)
-        :param disabled_readonly_text_color: If state is set to readonly or disabled, the color to use for the text
-        :type disabled_readonly_text_color: (str)
-        :param change_submits: * DEPRICATED DO NOT USE. Use `enable_events` instead
-        :type change_submits: (bool)
-        :param enable_events: If True then changes to this element are immediately reported as an event. Use this instead of change_submits (Default = False)
-        :type enable_events: (bool)
-        :param do_not_clear: If False then the field will be set to blank after ANY event (button, any event) (Default = True)
-        :type do_not_clear: (bool)
-        :param readonly: If True then the user cannot modify the field (Default = False)
-        :type readonly: (bool)
-        :param border_width: width of border around element in pixels
-        :type border_width: (int)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param focus: Determines if initial focus should go to this element.
-        :type focus: (bool)
-        :param pad: Amount of padding to put around element. Normally (horizontal pixels, vertical pixels) but can be split apart further into ((horizontal left, horizontal right), (vertical above, vertical below))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param visible: set visibility state of the element (Default = True)
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        :param default_text: Default value to display
+        :param size: Size of field in characters
+        :param password_char: If non-blank, will display this character for every character typed
+        :param background_color: Color for Element. Text or RGB Hex
+        '''
         self.DefaultText = default_text
         self.PasswordCharacter = password_char
         bg = background_color if background_color is not None else DEFAULT_INPUT_ELEMENTS_COLOR
@@ -596,11 +444,7 @@ class InputText(Element):
         self.do_not_clear = do_not_clear
         self.Justification = justification or 'left'
         self.Disabled = disabled
-        self.ReadOnly = readonly
-        self.disabled_readonly_background_color = disabled_readonly_background_color
-        self.disabled_readonly_text_color = disabled_readonly_text_color
         self.ChangeSubmits = change_submits or enable_events
-        self.BorderWidth = border_width if border_width is not None else DEFAULT_BORDER_WIDTH
         self.Widget = self.QT_QLineEdit = None          # type: QLineEdit
         self.ValueWasChanged = False
         super().__init__(ELEM_TYPE_INPUT_TEXT, size=size, background_color=bg, text_color=fg, key=key, pad=pad,
@@ -689,53 +533,15 @@ I = InputText
 # ---------------------------------------------------------------------- #
 class Combo(Element):
     def __init__(self, values, default_value=None, size=(None, None), auto_size_text=None, background_color=None,
-                 text_color=None, change_submits=False, enable_events=False, disabled=False, key=None, k=None, pad=None, tooltip=None,
+                 text_color=None, change_submits=False, enable_events=False, disabled=False, key=None, pad=None, tooltip=None,
                  readonly=False, visible_items=10, font=None, auto_complete=True, visible=True, size_px=(None,None), metadata=None):
-        """
+        '''
         Input Combo Box Element (also called Dropdown box)
-
-        :param values: values to choose. While displayed as text, the items returned are what the caller supplied, not text
-        :type values: List[Any] or Tuple[Any]
-        :param default_value: Choice to be displayed as initial value. Must match one of values variable contents
-        :type default_value: (Any)
-        :param size: width = characters-wide, height = rows-high
-        :type size: Tuple[int, int] (width, height)
-        :param auto_size_text: True if element should be the same size as the contents
-        :type auto_size_text: (bool)
+        :param values:
+        :param size: Size of field in characters
+        :param auto_size_text: True if should shrink field to fit the default text
         :param background_color: Color for Element. Text or RGB Hex
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param change_submits: DEPRICATED DO NOT USE. Use `enable_events` instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Combo event is when a choice is made
-        :type enable_events: (bool)
-        :param disabled: set disable state for element
-        :type disabled: (bool)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text that will appear when mouse hovers over this element
-        :type tooltip: (str)
-        :param readonly: make element readonly (user can't change). True means user cannot change
-        :type readonly: (bool)
-        :param visible_items: ???
-        :type visible_items: ???
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param auto_complete: ???
-        :type auto_complete: ???
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        '''
         self.Values = values
         self.DefaultValue = default_value
         self.ChangeSubmits = change_submits or enable_events
@@ -793,39 +599,20 @@ Drop = InputCombo
 # ---------------------------------------------------------------------- #
 class OptionMenu(Element):
     def __init__(self, values, default_value=None, size=(None, None), disabled=False, auto_size_text=None,
-                 background_color=None, text_color=None, key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
+                 background_color=None, text_color=None, key=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
         InputOptionMenu - NOT USED IN QT
-        :param values: Values to be displayed
-        :type values: List[Any] or Tuple[Any]
-        :param default_value: the value to choose by default
-        :type default_value: (Any)
-        :param size: size in characters (wide) and rows (high)
-        :type size: Tuple[int, int] (width, height)
-        :param disabled: control enabled / disabled
-        :type disabled: (bool)
-        :param auto_size_text: True if size of Element should match the contents of the items
-        :type auto_size_text: (bool)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text that will appear when mouse hovers over this element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        :param values:
+        :param default_value:
+        :param size:
+        :param disabled:
+        :param auto_size_text:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.Values = values
         self.DefaultValue = default_value
         self.TKOptionMenu = None
@@ -850,48 +637,24 @@ InputOptionMenu = OptionMenu
 # ---------------------------------------------------------------------- #
 class Listbox(Element):
     def __init__(self, values, default_values=None, select_mode=None, change_submits=False, enable_events=False, bind_return_key=False, size=(None, None), disabled=False, auto_size_text=None, font=None, background_color=None,
-                 text_color=None, key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param values: list of values to display. Can be any type including mixed types as long as they have __str__ method
-        :type values: List[Any] or Tuple[Any]
-        :param default_values: which values should be initially selected
-        :type default_values: List[Any]
-        :param select_mode: Select modes are used to determine if only 1 item can be selected or multiple and how they can be selected.   Valid choices begin with "LISTBOX_SELECT_MODE_" and include: LISTBOX_SELECT_MODE_SINGLE LISTBOX_SELECT_MODE_MULTIPLE LISTBOX_SELECT_MODE_BROWSE LISTBOX_SELECT_MODE_EXTENDED
-        :type select_mode: [enum]
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Listbox generates events when an item is clicked
-        :type enable_events: (bool)
-        :param bind_return_key: If True, then the return key will cause a the Listbox to generate an event
-        :type bind_return_key: (bool)
-        :param size: width = characters-wide, height = rows-high
-        :type size: Tuple(int, int) (width, height)
-        :param disabled: set disable state for element
-        :type disabled: (bool)
-        :param auto_size_text: True if element should be the same size as the contents
-        :type auto_size_text: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 text_color=None, key=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Listbox Element
+        :param values:
+        :param default_values:
+        :param select_mode:
+        :param change_submits:
+        :param bind_return_key:
+        :param size:
+        :param disabled:
+        :param auto_size_text:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.Values = values
         self.DefaultValues = default_values
         self.TKListbox = None
@@ -974,55 +737,32 @@ class Listbox(Element):
     update = Update
 
 
-LBox = Listbox
-LB = Listbox
-
 # ---------------------------------------------------------------------- #
 #                           Radio                                        #
 # ---------------------------------------------------------------------- #
 class Radio(Element):
     def __init__(self, text, group_id, default=False, disabled=False, size=(None, None), auto_size_text=None,
-                 background_color=None, text_color=None, font=None, key=None, k=None, pad=None, tooltip=None,
+                 background_color=None, text_color=None, font=None, key=None, pad=None, tooltip=None,
                  change_submits=False,  enable_events=False, visible=True, size_px=(None,None), metadata=None):
         """
-        :param text: Text to display next to button
-        :type text: (str)
-        :param group_id: Groups together multiple Radio Buttons. Any type works
-        :type group_id: (Any)
-        :param default: Set to True for the one element of the group you want initially selected
-        :type default: (bool)
-        :param disabled: set disable state
-        :type disabled: (bool)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True will size the element to match the length of the text
-        :type auto_size_text: (bool)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Radio Button events happen when an item is selected
-        :type enable_events: (bool)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
+
+        :param text:
+        :param group_id:
+        :param default:
+        :param disabled:
+        :param size:
+        :param auto_size_text:
+        :param background_color:
+        :param text_color:
+        :param font:
+        :param key:
+        :param pad:
+        :param tooltip:
+        :param change_submits:
+        :param enable_events:
+        :param visible:
+        :param size_px:
         """
-        key = key if key is not None else k
         self.InitialState = default
         self.Text = text
         self.GroupID = group_id
@@ -1046,18 +786,12 @@ class Radio(Element):
             self.QT_Radio_Button.setDisabled(False)
         if value is True:
             self.QT_Radio_Button.setChecked(True)
-        if value is False:
+        if value is False:          # If setting this button to false, then set them ALL to false too
+            self.QT_Radio_Button.setChecked(True)
             self.QT_RadioButtonGroup.setExclusive(False)
             self.QT_Radio_Button.setChecked(False)
             self.QT_RadioButtonGroup.setExclusive(True)
         super().Update(self.QT_Radio_Button, background_color=background_color, text_color=text_color, font=font, visible=visible)
-
-
-    def reset_group(self):
-        self.QT_Radio_Button.setChecked(True)
-        self.QT_RadioButtonGroup.setExclusive(False)
-        self.QT_Radio_Button.setChecked(False)
-        self.QT_RadioButtonGroup.setExclusive(True)
 
 
     def _QtCallbackValueChanged(self, value):
@@ -1067,52 +801,27 @@ class Radio(Element):
 
     update = Update
 
-R = Radio
-Rad = Radio
-
 # ---------------------------------------------------------------------- #
 #                           Checkbox                                     #
 # ---------------------------------------------------------------------- #
 class Checkbox(Element):
     def __init__(self, text, default=False, size=(None, None), auto_size_text=None, font=None, background_color=None,
-                 text_color=None, change_submits=False, enable_events=False, disabled=False, key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param text: Text to display next to checkbox
-        :type text: (str)
-        :param default: Set to True if you want this checkbox initially checked
-        :type default: (bool)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True will size the element to match the length of the text
-        :type auto_size_text: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Checkbox events happen when an item changes
-        :type enable_events: (bool)
-        :param disabled: set disable state
-        :type disabled: (bool)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 text_color=None, change_submits=False, enable_events=False, disabled=False, key=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Checkbox Element
+        :param text:
+        :param default:
+        :param size:
+        :param auto_size_text:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param change_submits:
+        :param disabled:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.Text = text
         self.InitialState = default
         self.Value = None
@@ -1159,46 +868,23 @@ class Spin(Element):
     # Values = None
     # TKSpinBox = None
     def __init__(self, values, initial_value=None, disabled=False, change_submits=False,  enable_events=False, size=(None, None),
-                 auto_size_text=None, font=None, background_color=None, text_color=None, key=None, k=None, pad=None,
+                 auto_size_text=None, font=None, background_color=None, text_color=None, key=None, pad=None,
                  tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
+        '''
         Spinner Element
-        :param values: List of valid values
-        :type values: Tuple[Any] or List[Any]
-        :param initial_value: Initial item to show in window. Choose from list of values supplied
-        :type initial_value: (Any)
-        :param disabled: set disable state
-        :type disabled: (bool)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Spin events happen when an item changes
-        :type enable_events: (bool)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True will size the element to match the length of the text
-        :type auto_size_text: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        :param values:
+        :param initial_value:
+        :param disabled:
+        :param change_submits:
+        :param size:
+        :param auto_size_text:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.Values = values
         self.DefaultValue = initial_value
         self.ChangeSubmits = change_submits or enable_events
@@ -1228,7 +914,7 @@ class Spin(Element):
             return str(self._strings[value])
 
         def valueFromText(self, text):
-            return self._values[int(text)]
+            return self._values[text]
 
 
     def _QtCallbackValueChanged(self, value):
@@ -1267,53 +953,24 @@ class Spin(Element):
 class Multiline(Element):
     def __init__(self, default_text='', enter_submits=False, disabled=False, autoscroll=False, size=(None, None),
                  auto_size_text=None, background_color=None, text_color=None, change_submits=False, enable_events=False, do_not_clear=True,
-                 key=None, k=None, write_only=False, focus=False, font=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-
-        """
-        :param default_text: Initial text to show
-        :type default_text: (str)
-        :param enter_submits: if True, the Window.Read call will return is enter key is pressed in this element
-        :type enter_submits: (bool)
-        :param disabled: set disable state
-        :type disabled: (bool)
-        :param autoscroll: If True the contents of the element will automatically scroll as more data added to the end
-        :type autoscroll: (bool)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True will size the element to match the length of the text
-        :type auto_size_text: (bool)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Spin events happen when an item changes
-        :type enable_events: (bool)
-        :param do_not_clear: if False the element will be cleared any time the Window.Read call returns
-        :type do_not_clear: bool
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param write_only: If True then no entry will be added to the values dictionary when the window is read
-        :type write_only: bool
-        :param focus: if True initial focus will go to this element
-        :type focus: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 key=None, focus=False, font=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Multiline Element
+        :param default_text:
+        :param enter_submits:
+        :param disabled:
+        :param autoscroll:
+        :param size:
+        :param auto_size_text:
+        :param background_color:
+        :param text_color:
+        :param do_not_clear:
+        :param key:
+        :param focus:
+        :param pad:
+        :param tooltip:
+        :param font:
+        '''
         self.DefaultText = default_text
         self.EnterSubmits = enter_submits
         bg = background_color if background_color else DEFAULT_INPUT_ELEMENTS_COLOR
@@ -1323,7 +980,6 @@ class Multiline(Element):
         self.Autoscroll = autoscroll
         self.Disabled = disabled
         self.ChangeSubmits = change_submits or enable_events
-        self.WriteOnly = write_only
         tsize = _convert_tkinter_size_to_Qt(size, scaling=DEFAULT_PIXELS_TO_CHARS_SCALING_MULTILINE_TEXT,height_cutoff=DEFAULT_PIXEL_TO_CHARS_CUTOFF_MULTILINE) if size[0] is not None else size_px
 
         self.Widget = self.QT_TextEdit = None               # type: QTextEdit
@@ -1364,6 +1020,8 @@ class Multiline(Element):
 
     def _dropEvent(self, e):
         self.Widget.setText(e.mimeData().text())
+
+
 
 
     def Update(self, value=None, disabled=None, append=False, autoscroll=False, background_color=None, text_color=None, font=None, text_color_for_value=None, background_color_for_value=None, visible=None, readonly=None):
@@ -1422,18 +1080,12 @@ class Multiline(Element):
         """
         Print like Python normally prints except route the output to a multline element and also add colors if desired
 
-        :param args: The arguments to print
-        :type args: List[Any]
+        :param args: List[Any] The arguments to print
         :param end: (str) The end char to use just like print uses
-        :type end: (str)
         :param sep: (str) The separation character like print uses
-        :type sep: (str)
         :param text_color: The color of the text
-        :type text_color: (str)
         :param background_color: The background color of the line
-        :type background_color: (str)
         :param autoscroll: (bool) If True cursor is moved to end after print
-        :type autoscroll: (bool)
         """
         _print_to_element(self, *args, end=end, sep=sep, text_color=text_color, background_color=background_color, autoscroll=autoscroll)
 
@@ -1452,50 +1104,24 @@ MLine = Multiline
 #                           ScrolledOutput                               #
 # ---------------------------------------------------------------------- #
 class MultilineOutput(Element):
-    def __init__(self, default_text='', enter_submits=False, disabled=False, autoscroll=False, size=(None, None), auto_size_text=None, background_color=None, text_color=None, change_submits=False, enable_events=False, do_not_clear=True, key=None, k=None, focus=False, font=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param default_text: default value to put into input area
-        :type default_text: (str)
-        :param enter_submits: if True, the Window.Read call will return is enter key is pressed in this element
-        :type enter_submits: (bool)
-        :param disabled: set disable state
-        :type disabled: (bool)
-        :param autoscroll: If True cursor is moved to end after print
-        :typep autoscroll: (bool)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True size of the Text Element will be sized to fit the string provided in 'text' parm
-        :type auto_size_text: (bool)
-        :param background_color: color of background in one of the color formats
-        :type background_color: (str)
-        ::param text_color: color of the text
-        :type text_color: (str)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. If this button is a target, should it generate an event when filled in
-        :type enable_events: (bool)
-        :param do_not_clear: if False the element will be cleared any time the Window.Read call returns
-        :type do_not_clear: (bool)
-        :param focus: if True, initial focus will be put on this button
-        :type focus: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, default_text='', enter_submits=False, disabled=False, autoscroll=False, size=(None, None), auto_size_text=None, background_color=None, text_color=None, change_submits=False, enable_events=False, do_not_clear=True, key=None, focus=False, font=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Multiline Element
+        :param default_text:
+        :param enter_submits:
+        :param disabled:
+        :param autoscroll:
+        :param size:
+        :param auto_size_text:
+        :param background_color:
+        :param text_color:
+        :param do_not_clear:
+        :param key:
+        :param focus:
+        :param pad:
+        :param tooltip:
+        :param font:
+        '''
         self.DefaultText = default_text
         self.EnterSubmits = enter_submits
         bg = background_color if background_color else DEFAULT_INPUT_ELEMENTS_COLOR
@@ -1535,18 +1161,12 @@ class MultilineOutput(Element):
         """
         Print like Python normally prints except route the output to a multline element and also add colors if desired
 
-        :param args: The arguments to print
-        :type args: List[Any]
-        :param end: The end char to use just like print uses
-        :type end: (str)
-        :param sep: The separation character like print uses
-        :type sep: (str)
+        :param args: List[Any] The arguments to print
+        :param end: (str) The end char to use just like print uses
+        :param sep: (str) The separation character like print uses
         :param text_color: The color of the text
-        :type text_color: (str)
         :param background_color: The background color of the line
-        :type background_color: (str)
-        :param autoscroll: If True cursor is moved to end after print
-        :typep autoscroll: (bool)
+        :param autoscroll: (bool) If True cursor is moved to end after print
         """
         _print_to_element(self, *args, end=end, sep=sep, text_color=text_color, background_color=background_color, autoscroll=autoscroll)
 
@@ -1561,47 +1181,22 @@ MLineOut = Multiline
 #                                       Text                             #
 # ---------------------------------------------------------------------- #
 class Text(Element):
-    def __init__(self, text='', size=(None, None),  auto_size_text=None, click_submits=None, enable_events=False, relief=None, font=None, text_color=None, background_color=None, justification=None, pad=None, margins=None, key=None, k=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-
-        """
-        :param text: The text to display. Can include /n to achieve multiple lines.  Will convert (optional) parameter into a string
-        :type text: (Any)
-        :param size: (width, height) width = characters-wide, height = rows-high
-        :type size: Tuple[int, int]
-        :param auto_size_text: if True size of the Text Element will be sized to fit the string provided in 'text' parm
-        :type auto_size_text: (bool)
-        :param click_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type click_submits: (bool)
-        :param enable_events: Turns on the element specific events. Text events happen when the text is clicked
-        :type enable_events: (bool)
-        :param relief: relief style around the text. Values are same as progress meter relief values. Should be a constant that is defined at starting with "RELIEF_" - `RELIEF_RAISED, RELIEF_SUNKEN, RELIEF_FLAT, RELIEF_RIDGE, RELIEF_GROOVE, RELIEF_SOLID`
-        :type relief: (str/enum)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param justification: how string should be aligned within space provided by size. Valid choices = `left`, `right`, `center`
-        :type justification: (str)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param margins: ???
-        :type margins: ???
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, text='', size=(None, None),  auto_size_text=None, click_submits=None, enable_events=False, relief=None, font=None, text_color=None, background_color=None, justification=None, pad=None, margins=None, key=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Text Element
+        :param text:
+        :param size:
+        :param auto_size_text:
+        :param click_submits:
+        :param relief:
+        :param font:
+        :param text_color:
+        :param background_color:
+        :param justification:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.DisplayText = str(text)
         self.TextColor = text_color if text_color else DEFAULT_TEXT_COLOR
         self.Justification = justification or 'left'
@@ -1624,7 +1219,7 @@ class Text(Element):
         _element_callback_quit_mainloop(self)
 
     def Update(self, value=None, background_color=None, text_color=None, font=None, visible=None):
-        """
+        '''
 
         :param value:
         :param background_color:
@@ -1632,7 +1227,7 @@ class Text(Element):
         :param font:
         :param visible:
         :return:
-        """
+        '''
         if value is not None:
             self.DisplayText = str(value)
             self.QT_Label.setText(str(value))
@@ -1651,32 +1246,17 @@ T = Text
 # ---------------------------------------------------------------------- #
 class Output(Element):
     def __init__(self, size=(None, None), background_color=None, text_color=None, pad=None, font=None, tooltip=None,
-                 key=None, k=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param size: (width, height) w=characters-wide, h=rows-high
-        :type size: Tuple[int, int]
-        :param background_color: color of background
-        :type background_color: (str)
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 key=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Output Element
+        :param size:
+        :param background_color:
+        :param text_color:
+        :param pad:
+        :param font:
+        :param tooltip:
+        :param key:
+        '''
         self._TKOut = None
         bg = background_color if background_color else DEFAULT_INPUT_ELEMENTS_COLOR
         fg = text_color if text_color is not None else DEFAULT_INPUT_TEXT_COLOR
@@ -1728,79 +1308,36 @@ class Button(Element):
                  file_types=(("ALL Files", "*"),), initial_folder=None, disabled=False, change_submits=False, enable_events=False,
                  image_filename=None, image_data=None, image_size=(None, None), image_subsample=None, border_width=None,
                  size=(None, None), auto_size_button=None, button_color=None, font=None, bind_return_key=False,
-                 focus=False, pad=None, key=None, k=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param button_text: Text to be displayed on the button
-        :type button_text: (str)
-        :param button_type: You  should NOT be setting this directly. ONLY the shortcut functions set this
-        :type button_type: (int)
-        :param target: key or (row,col) target for the button. Note that -1 for column means 1 element to the left of this one. The constant ThisRow is used to indicate the current row. The Button itself is a valid target for some types of button
-        :type target: Union[str, Tuple[int, int]]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param file_types: the filetypes that will be used to match files. To indicate all files: (("ALL Files", "*.*"),).  Note - NOT SUPPORTED ON MAC
-        :type file_types: Tuple[Tuple[str, str], ...]
-        :param initial_folder: starting path for folders and files
-        :type initial_folder: (str)
-        :param disabled: If True button will be created disabled
-        :type disabled: (bool)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. If this button is a target, should it generate an event when filled in
-        :type enable_events: (bool)
-        :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-        :type image_filename: (str)
-        :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-        :type image_data: Union[bytes, str]
-        :param image_size: Size of the image in pixels (width, height)
-        :type image_size: Tuple[int, int]
-        :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-        :type image_subsample: (int)
-        :param border_width: width of border around button in pixels
-        :type border_width: (int)
-        :param size: (width, height) of the button in characters wide, rows high
-        :type size: Tuple[int, int]
-        :param auto_size_button: if True the button size is sized to fit the text
-        :type auto_size_button: (bool)
-        :param button_color: of button. Easy to remember which is which if you say "ON" between colors. "red" on "green".
-        :type button_color: Tuple[str, str] == (text color, background color)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param bind_return_key: If True the return key will cause this button to be pressed
-        :type bind_return_key: (bool)
-        :param focus: if True, initial focus will be put on this button
-        :type focus: (bool)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 focus=False, pad=None, key=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Button Element
+        :param button_text:
+        :param button_type:
+        :param target:
+        :param tooltip:
+        :param file_types:
+        :param initial_folder:
+        :param disabled:
+        :param image_filename:
+        :param image_size:
+        :param image_subsample:
+        :param border_width:
+        :param size:
+        :param auto_size_button:
+        :param button_color:
+        :param default_value:
+        :param font:
+        :param bind_return_key:
+        :param focus:
+        :param pad:
+        :param key:
+        '''
         self.AutoSizeButton = auto_size_button
         self.BType = button_type
         self.FileTypes = file_types
         self.TKButton = None
         self.Target = target
         self.ButtonText = str(button_text)
-
-        # Button colors can be a tuple (text, background) or a string with format "text on background"
-        if button_color is None:
-            button_color = DEFAULT_BUTTON_COLOR
-        else:
-            try:
-                if isinstance(button_color,str):
-                    button_color = button_color.split(' on ')
-            except Exception as e:
-                print('* cprint warning * you messed up with color formatting', e)
-
         self.ButtonColor = button_color if button_color else DEFAULT_BUTTON_COLOR
         self.TextColor = self.ButtonColor[0]
         self.BackgroundColor = self.ButtonColor[1]
@@ -2016,48 +1553,30 @@ Btn = Button
 class ButtonMenu(Element):
     def __init__(self, button_text ,menu_def, tooltip=None,disabled=False,
                  image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,border_width=None,
-                 size=(None, None), auto_size_button=None, button_color=None, font=None, pad=None, key=None, k=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param button_text: Text to be displayed on the button
-        :type button_text: (str)
-        :param menu_def: A list of lists of Menu items to show when this element is clicked. See docs for format as they are the same for all menu types
-        :type menu_def: List[List[str]]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param disabled: If True button will be created disabled
-        :type disabled: (bool)
-        :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-        :type image_filename: (str)
-        :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-        :type image_data: Union[bytes, str]
-        :param image_size: Size of the image in pixels (width, height)
-        :type image_size: Tuple[int, int]
-        :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-        :type image_subsample: (int)
-        :param border_width: width of border around button in pixels
-        :type border_width: (int)
-        :param size: (width, height) of the button in characters wide, rows high
-        :type size: Tuple[int, int]
-        :param auto_size_button: if True the button size is sized to fit the text
-        :type auto_size_button: (bool)
-        :param button_color: of button. Easy to remember which is which if you say "ON" between colors. "red" on "green"
-        :type button_color: Tuple[str, str] == (text color, background color)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 size=(None, None), auto_size_button=None, button_color=None, font=None, pad=None, key=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Button Element
+        :param button_text:
+        :param button_type:
+        :param target:
+        :param tooltip:
+        :param file_types:
+        :param initial_folder:
+        :param disabled:
+        :param image_filename:
+        :param image_size:
+        :param image_subsample:
+        :param border_width:
+        :param size:
+        :param auto_size_button:
+        :param button_color:
+        :param default_value:
+        :param font:
+        :param bind_return_key:
+        :param focus:
+        :param pad:
+        :param key:
+        '''
         self.MenuDefinition = menu_def
         self.AutoSizeButton = auto_size_button
         self.ButtonText = button_text
@@ -2113,41 +1632,20 @@ BMenu = ButtonMenu
 # ---------------------------------------------------------------------- #
 class ProgressBar(Element):
     def __init__(self, max_value, orientation=None, size=(None, None),start_value=0,  auto_size_text=None, bar_color=(None, None),
-                 style=None, border_width=None, relief=None, key=None, k=None, pad=None, visible=True, size_px=(None,None), metadata=None):
-
-        """
-        :param max_value: max value of progressbar
-        :type max_value: (int)
-        :param orientation: 'horizontal' or 'vertical'
-        :type orientation: (str)
-        :param size: Size of the bar.  If horizontal (chars wide, pixels high), vert (pixels wide, rows high)
-        :type size: Tuple[int, int]
-        :param start_value: ???
-        :type start_value: ???
-        :param auto_size_text: Not sure why this is here
-        :type auto_size_text: (bool)
-        :param bar_color: The 2 colors that make up a progress bar. One is the background, the other is the bar
-        :type bar_color: Tuple[str, str]
-        :param style: Progress bar style defined as one of these 'default', 'winnative', 'clam', 'alt', 'classic', 'vista', 'xpnative'
-        :type style: (str)
-        :param border_width: The amount of pixels that go around the outside of the bar
-        :type border_width: (int)
-        :param relief: relief style. Values are same as progress meter relief values.  Can be a constant or a string: `RELIEF_RAISED RELIEF_SUNKEN RELIEF_FLAT RELIEF_RIDGE RELIEF_GROOVE RELIEF_SOLID` (Default value = DEFAULT_PROGRESS_BAR_RELIEF)
-        :type relief: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 style=None, border_width=None, relief=None, key=None, pad=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        ProgressBar Element
+        :param max_value:
+        :param orientation:
+        :param size:
+        :param auto_size_text:
+        :param bar_color:
+        :param style:
+        :param border_width:
+        :param relief:
+        :param key:
+        :param pad:
+        '''
         self.MaxValue = max_value
         self.TKProgressBar = None
         self.Cancelled = False
@@ -2189,38 +1687,17 @@ Prog = ProgressBar
 #                           Image                                        #
 # ---------------------------------------------------------------------- #
 class Image(Element):
-    def __init__(self, filename=None, data=None, data_base64=None, background_color=None, size=(None, None), pad=None, key=None, k=None, tooltip=None, click_submits=False,  enable_events=False, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param filename: image filename if there is a button image. GIFs and PNGs only.
-        :type filename: (str)
-        :param data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-        :type data: Union[bytes, str]
-        :param data_base64: ???
-        :type data_base64: ???
-        :param background_color: color of background
-        :type background_color:
-        :param size: (width, height) size of image in pixels
-        :type size: Tuple[int, int]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param click_submits: ???
-        :type click_submits: (bool)
-        :param enable_events: Turns on the element specific events. For an Image element, the event is "image clicked"
-        :type enable_events: (bool)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, filename=None, data=None, data_base64=None, background_color=None, size=(None, None), pad=None, key=None, tooltip=None, click_submits=False,  enable_events=False, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Image Element
+        :param filename:
+        :param data:
+        :param background_color:
+        :param size:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.Filename = filename
         self.Data = data
         self.DataBase64 = data_base64
@@ -2273,27 +1750,16 @@ class Image(Element):
 #                           Canvas                                       #
 # ---------------------------------------------------------------------- #
 class Canvas(Element):
-    def __init__(self, canvas=None, background_color=None, size=(None, None), pad=None, key=None, k=None, tooltip=None, metadata=None):
-        """
-        Canvas Element - NOT USED IN QT PORT ?
-        :param canvas: Your own tk.Canvas if you already created it. Leave blank to create a Canvas
-        :type canvas: (tk.Canvas)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param size: (width in char, height in rows) size in pixels to make canvas
-        :type size: Tuple[int,int]
-        :param pad: Amount of padding to put around element
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, canvas=None, background_color=None, size=(None, None), pad=None, key=None, tooltip=None, metadata=None):
+        '''
+        Canvas Element - NOT USED IN QT PORT
+        :param canvas:
+        :param background_color:
+        :param size:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.BackgroundColor = background_color if background_color is not None else DEFAULT_BACKGROUND_COLOR
         self._TKCanvas = canvas
 
@@ -2312,37 +1778,18 @@ class Canvas(Element):
 #                           Graph                                        #
 # ---------------------------------------------------------------------- #
 class Graph(Element):
-    def __init__(self, canvas_size, graph_bottom_left, graph_top_right, background_color=None, pad=None, key=None, k=None,
+    def __init__(self, canvas_size, graph_bottom_left, graph_top_right, background_color=None, pad=None, key=None,
                  tooltip=None, visible=True, change_submits=False, enable_events=False, drag_submits=False, metadata=None):
-        """
-        :param canvas_size: size of the canvas area in pixels
-        :type canvas_size: Tuple[int, int]
-        :param graph_bottom_left: (x,y) The bottoms left corner of your coordinate system
-        :type graph_bottom_left: Tuple[int, int]
-        :param graph_top_right: (x,y) The top right corner of  your coordinate system
-        :type graph_top_right: Tuple[int, int]
-        :param background_color: background color of the drawing area
-        :type background_color: (str)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element (Default = True)
-        :type visible: (bool)
-        :param change_submits: * DEPRICATED DO NOT USE. Use `enable_events` instead
-        :type change_submits: (bool)
-        :param enable_events: If True then clicks on the Graph are immediately reported as an event. Use this instead of change_submits
-        :type enable_events: (bool)
-        :param drag_submits: if True and Events are enabled for the Graph, will report Events any time the mouse moves while button down
-        :type drag_submits: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        '''
+        Graph Element
+        :param canvas_size:
+        :param graph_bottom_left:
+        :param graph_top_right:
+        :param background_color:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.CanvasSize = canvas_size
         self.BottomLeft = graph_bottom_left
         self.TopRight = graph_top_right
@@ -2394,9 +1841,9 @@ class Graph(Element):
         pen = QPen(qcolor)
         qcolor = QColor(fill_color)
         brush = QBrush(qcolor)
-        circle_id = self.QT_QGraphicsScene.addEllipse(self.x + converted_point[0] - radius, self.y + converted_point[1] - radius,
-                                                      radius * 2, radius * 2, pen=pen, brush=brush)
-        return circle_id
+        circle_id = self.QT_QGraphicsScene.addEllipse(self.x+converted_point[0], self.y+converted_point[1],
+                                           radius, radius, pen=pen, brush=brush)
+        return circle_id           
 
     def RelocateFigure(self, id, x, y):
         id=id           # type: QtWidgets.QGraphicsEllipseItem
@@ -2550,48 +1997,24 @@ class Graph(Element):
 #                           Frame                                        #
 # ---------------------------------------------------------------------- #
 class Frame(Element):
-    def __init__(self, title, layout, title_color=None, background_color=None, title_location=None, frame_color=None,
-                 relief=DEFAULT_FRAME_RELIEF, element_justification='float', size=(None, None), font=None, pad=None, border_width=None, key=None, k=None,
+    def __init__(self, title, layout, title_color=None, background_color=None, title_location=None,
+                 relief=DEFAULT_FRAME_RELIEF, element_justification='float', size=(None, None), font=None, pad=None, border_width=None, key=None,
                  tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param title: text that is displayed as the Frame's "label" or title
-        :type title: (str)
-        :param layout: The layout to put inside the Frame
-        :type layout: List[List[Elements]]
-        :param title_color: color of the title text
-        :type title_color: (str)
-        :param background_color: background color of the Frame
-        :type background_color: (str)
-        :param title_location: location to place the text title.  Choices include: TITLE_LOCATION_TOP TITLE_LOCATION_BOTTOM TITLE_LOCATION_LEFT TITLE_LOCATION_RIGHT TITLE_LOCATION_TOP_LEFT TITLE_LOCATION_TOP_RIGHT TITLE_LOCATION_BOTTOM_LEFT TITLE_LOCATION_BOTTOM_RIGHT
-        :type title_location: (enum)
-        :param frame_color: color of the frame lines
-        :type frame_color: (str)
-        :param relief: relief style. Values are same as other elements with reliefs. Choices include RELIEF_RAISED RELIEF_SUNKEN RELIEF_FLAT RELIEF_RIDGE RELIEF_GROOVE RELIEF_SOLID
-        :type relief: (enum)
-        :param element_justification: All elements inside the Frame will have this justification 'left', 'right', 'center' are valid values
-        :type element_justification: (str)
-        :param size: (width, height) (note this parameter may not always work)
-        :type size: Tuple[int, int]
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param border_width: width of border around element in pixels
-        :type border_width: (int)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        '''
+        Frame Element
+        :param title:
+        :param layout:
+        :param title_color:
+        :param background_color:
+        :param title_location:
+        :param relief:
+        :param size:
+        :param font:
+        :param pad:
+        :param border_width:
+        :param key:
+        :param tooltip:
+        '''
         self.UseDictionary = False
         self.ReturnValues = None
         self.ReturnValuesList = []
@@ -2607,7 +2030,6 @@ class Frame(Element):
         self.BorderWidth = border_width
         self.BackgroundColor = background_color if background_color is not None else DEFAULT_BACKGROUND_COLOR
         self.ElementJustification = element_justification
-        self.FrameColor = frame_color
         self.Widget = self.QT_QGroupBox = None              # type: QGroupBox
         self.Layout(layout)
 
@@ -2616,7 +2038,7 @@ class Frame(Element):
         return
 
     def AddRow(self, *args):
-        """ Parms are a variable number of Elements """
+        ''' Parms are a variable number of Elements '''
         NumRows = len(self.Rows)  # number of existing rows is our row number
         CurrentRowNumber = NumRows  # this row's number
         CurrentRow = []  # start with a blank row and build up
@@ -2653,10 +2075,10 @@ class Frame(Element):
 # ---------------------------------------------------------------------- #
 class VerticalSeparator(Element):
     def __init__(self, pad=None):
-        """
+        '''
         VerticalSeperator - A separator that spans only 1 row in a vertical fashion
         :param pad:
-        """
+        '''
         self.Orientation = 'vertical'  # for now only vertical works
 
         super().__init__(ELEM_TYPE_SEPARATOR, pad=pad)
@@ -2665,7 +2087,6 @@ class VerticalSeparator(Element):
 
 
 VSeperator = VerticalSeparator
-VSeparator = VerticalSeparator
 VSep = VerticalSeparator
 
 
@@ -2674,10 +2095,10 @@ VSep = VerticalSeparator
 # ---------------------------------------------------------------------- #
 class HorizontalSeparator(Element):
     def __init__(self, pad=None, size_px=(None,None)):
-        """
+        '''
         VerticalSeperator - A separator that spans only 1 row in a vertical fashion
         :param pad:
-        """
+        '''
         self.Orientation = 'horizontal'  # for now only vertical works
 
         super().__init__(ELEM_TYPE_SEPARATOR, pad=pad)
@@ -2694,38 +2115,20 @@ HSep = HorizontalSeparator
 # ---------------------------------------------------------------------- #
 class Tab(Element):
     def __init__(self, title, layout, title_color=None, element_justification='float', background_color=None, font=None, pad=None, disabled=False,
-                 border_width=None, key=None, k=None, tooltip=None, visible=True, metadata=None):
-        """
-        :param title: text to show on the tab
-        :type title: (str)
-        :param layout: The element layout that will be shown in the tab
-        :type layout: List[List[Element]]
-        :param title_color: color of the tab text (note not currently working on tkinter)
-        :type title_color: (str)
-        :param element_justification: All elements inside the Tab will have this justification 'left', 'right', 'center' are valid values
-        :type element_justification: (str)
-        :param background_color: color of background of the entire layout
-        :type background_color: (str)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param disabled: If True button will be created disabled
-        :type disabled: (bool)
-        :param border_width: width of border around element in pixels
-        :type border_width: (int)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 border_width=None, key=None, tooltip=None, visible=True, metadata=None):
+        '''
+        Tab Element
+        :param title:
+        :param layout:
+        :param title_color:
+        :param background_color:
+        :param font:
+        :param pad:
+        :param disabled:
+        :param border_width:
+        :param key:
+        :param tooltip:
+        '''
         self.UseDictionary = False
         self.ReturnValues = None
         self.ReturnValuesList = []
@@ -2752,7 +2155,7 @@ class Tab(Element):
         return
 
     def AddRow(self, *args):
-        """ Parms are a variable number of Elements """
+        ''' Parms are a variable number of Elements '''
         NumRows = len(self.Rows)  # number of existing rows is our row number
         CurrentRowNumber = NumRows  # this row's number
         CurrentRow = []  # start with a blank row and build up
@@ -2808,42 +2211,22 @@ class Tab(Element):
 # ---------------------------------------------------------------------- #
 class TabGroup(Element):
     def __init__(self, layout, tab_location=None, title_color=None, selected_title_color=None, background_color=None,
-                 font=None, change_submits=False, enable_events=False, pad=None, border_width=None, theme=None, key=None, k=None, tooltip=None, visible=True, metadata=None):
-        """
-        :param layout: Layout of Tabs. Different than normal layouts. ALL Tabs should be on first row
-        :type layout: List[List[Tab]]
-        :param tab_location: location that tabs will be displayed. Choices are left, right, top, bottom, lefttop, leftbottom, righttop, rightbottom, bottomleft, bottomright, topleft, topright
-        :type tab_location: (str)
-        :param title_color: color of text on tabs
-        :type title_color: (str)
-        :param selected_title_color: color of tab text when it is selected
-        :type selected_title_color: (str)
-        :param background_color: color of background area that tabs are located on
-        :type background_color: (str)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param change_submits: * DEPRICATED DO NOT USE. Use `enable_events` instead
-        :type change_submits: (bool)
-        :param enable_events: If True then switching tabs will generate an Event
-        :type enable_events: (bool)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param border_width: width of border around element in pixels
-        :type border_width: (int)
-        :param theme: DEPRICATED - You can only specify themes using set options or when window is created. It's not possible to do it on an element basis
-        :type theme: (enum)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 font=None, change_submits=False, enable_events=False, pad=None, border_width=None, theme=None, key=None, tooltip=None, visible=True, metadata=None):
+        '''
+        TabGroup Element
+        :param layout:
+        :param tab_location:
+        :param title_color:
+        :param selected_title_color:
+        :param background_color:
+        :param font:
+        :param change_submits:
+        :param pad:
+        :param border_width:
+        :param theme:
+        :param key:
+        :param tooltip:
+        '''
         self.UseDictionary = False
         self.ReturnValues = None
         self.ReturnValuesList = []
@@ -2869,7 +2252,7 @@ class TabGroup(Element):
         return
 
     def AddRow(self, *args):
-        """ Parms are a variable number of Elements """
+        ''' Parms are a variable number of Elements '''
         NumRows = len(self.Rows)  # number of existing rows is our row number
         CurrentRowNumber = NumRows  # this row's number
         CurrentRow = []  # start with a blank row and build up
@@ -2941,50 +2324,25 @@ class TabGroup(Element):
 class Slider(Element):
     def __init__(self, range=(None, None), default_value=None, resolution=None, tick_interval=None, orientation=None,
                  border_width=None, relief=None, change_submits=False, enable_events=False, disabled=False, size=(None, None), font=None,
-                 background_color=None, text_color=None, key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param range: slider's range (min value, max value)
-        :type range: Union[Tuple[int, int], Tuple[float, float]]
-        :param default_value: starting value for the slider
-        :type default_value: Union[int, float]
-        :param resolution: the smallest amount the slider can be moved
-        :type resolution: Union[int, float]
-        :param tick_interval: how often a visible tick should be shown next to slider
-        :type tick_interval: Union[int, float]
-        :param orientation: 'horizontal' or 'vertical' ('h' or 'v' also work)
-        :type orientation: (str)
-        :param border_width: width of border around element in pixels
-        :type border_width: (int)
-        :param relief: relief style. RELIEF_RAISED RELIEF_SUNKEN RELIEF_FLAT RELIEF_RIDGE RELIEF_GROOVE RELIEF_SOLID
-        :type relief: (enum)
-        :param change_submits: * DEPRICATED DO NOT USE. Use `enable_events` instead
-        :type change_submits: (bool)
-        :param enable_events: If True then moving the slider will generate an Event
-        :type enable_events: (bool)
-        :param disabled: set disable state for element
-        :type disabled: (bool)
-        :param size: (w=characters-wide, h=rows-high)
-        :type size: Tuple[int, int]
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of slider's background
-        :type background_color: (str)
-        :param text_color: color of the slider's text
-        :type text_color: (str)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 background_color=None, text_color=None, key=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Slider Element
+        :param range:
+        :param default_value:
+        :param resolution:
+        :param orientation:
+        :param border_width:
+        :param relief:
+        :param change_submits:
+        :param disabled:
+        :param size:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.TKScale = None
         self.Range = (1, 10) if range == (None, None) else range
         self.DefaultValue = self.Range[0] if default_value is None else default_value
@@ -2994,7 +2352,7 @@ class Slider(Element):
         self.Resolution = 1 if resolution is None else resolution
         self.ChangeSubmits = change_submits or enable_events
         self.Disabled = disabled
-        self.TickInterval = tick_interval if tick_interval is not None else self.Range[1]//10
+        self.TickInterval = tick_interval
         temp_size = size
         if temp_size == (None, None):
             temp_size = (150, 30) if self.Orientation.startswith('h') else (30, 150)
@@ -3037,52 +2395,25 @@ class Slider(Element):
 class Dial(Element):
     def __init__(self, range=(None, None), default_value=None, resolution=None, tick_interval=None, orientation=None,
                  border_width=None, relief=None, change_submits=False, enable_events=False, disabled=False, size=(None, None), font=None,
-                 background_color=None, text_color=None, key=None, k=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param range: slider's range (min value, max value)
-        :type range: Union[Tuple[int, int], Tuple[float, float]]
-        :param default_value: Choice to be displayed as initial value. Must match one of values variable contents
-        :type default_value: (Any)
-        :param resolution: the smallest amount the slider can be moved
-        :type resolution: Union[int, float]
-        :param tick_interval: how often a visible tick should be shown next to slider
-        :type tick_interval: Union[int, float]
-        :param orientation: 'horizontal' or 'vertical' ('h' or 'v' also work)
-        :type orientation: (str)
-        :param border_width: width of border around button in pixels
-        :type border_width: (int)
-        :param relief: relief style. RELIEF_RAISED RELIEF_SUNKEN RELIEF_FLAT RELIEF_RIDGE RELIEF_GROOVE RELIEF_SOLID
-        :type relief: (enum)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. If this button is a target, should it generate an event when filled in
-        :type enable_events: (bool)
-        :param disabled: set disable state for element
-        :type disabled: (bool)
-        :param size: (width, height) of the button in characters wide, rows high
-        :type size: Tuple[int, int]
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of slider's background
-        :type background_color: (str)
-        :param text_color: color of the element's text
-        :type text_color: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 background_color=None, text_color=None, key=None, pad=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Dial Element
+        :param range:
+        :param default_value:
+        :param resolution:
+        :param orientation:
+        :param border_width:
+        :param relief:
+        :param change_submits:
+        :param disabled:
+        :param size:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.TKScale = None
         self.Range = (1, 10) if range == (None, None) else range
         self.DefaultValue = self.Range[0] if default_value is None else default_value
@@ -3125,26 +2456,17 @@ class Dial(Element):
 #                           Stretch                                       #
 # ---------------------------------------------------------------------- #
 class Stretch(Element):
-    def __init__(self, size=(None, None), font=None, background_color=None, text_color=None, key=None, k=None, pad=None, tooltip=None):
-        """
-        :param size: (width, height) of the button in characters wide, rows high
-        :type size: Tuple[int, int]
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param background_color: color of slider's background
-        :type background_color: (str)
-        :param text_color: color of the element's text
-        :type text_color: (str)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        """
-        key = key if key is not None else k
+    def __init__(self, size=(None, None), font=None, background_color=None, text_color=None, key=None, pad=None, tooltip=None):
+        '''
+        Stretch Element
+        :param size:
+        :param font:
+        :param background_color:
+        :param text_color:
+        :param key:
+        :param pad:
+        :param tooltip:
+        '''
         self.Widget = None          # type: Stretch
         super().__init__(ELEM_TYPE_STRETCH, size=size, font=font, background_color=background_color,
                          text_color=text_color, key=key, pad=pad, tooltip=tooltip)
@@ -3157,31 +2479,16 @@ class Stretch(Element):
 #                           Column                                       #
 # ---------------------------------------------------------------------- #
 class Column(Element):
-    def __init__(self, layout, background_color=None, element_justification='float', size=(None, None), pad=None, scrollable=False, key=None, k=None, visible=True, metadata=None):
-
-        """
-        :param layout: Layout that will be shown in the Column container
-        :type layout: List[List[Element]]
-        :param background_color: color of background of entire Column
-        :type background_color: (str)
-        :param element_justification: All elements inside the Column will have this justification 'left', 'right', 'center' are valid values
-        :type element_justification: (str)
-        :param size: (width, height) size in pixels (doesn't work quite right, sometimes only 1 dimension is set by tkinter
-        :type size: Tuple[int, int]
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param scrollable: if True then scrollbars will be added to the column
-        :type scrollable: (bool)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, layout, background_color=None, element_justification='float', size=(None, None), pad=None, scrollable=False, key=None, visible=True, metadata=None):
+        '''
+        Column Element
+        :param layout:
+        :param background_color:
+        :param size:
+        :param pad:
+        :param scrollable:
+        :param key:
+        '''
         self.UseDictionary = False
         self.ReturnValues = None
         self.ReturnValuesList = []
@@ -3244,31 +2551,17 @@ Col = Column
 #                           Menu                                       #
 # ---------------------------------------------------------------------- #
 class Menu(Element):
-    def __init__(self, menu_definition, background_color=None, size=(None, None), tearoff=False, pad=None, key=None, k=None, visible=True, metadata=None):
-        """
-        :param menu_definition: a menu definition (in menu definition format)
-        :type menu_definition: List[List[Tuple[str, List[str]]]
-        :param background_color: color of the background
-        :type background_color: (str)
-        :param size: Not used in the tkinter port
-        :type size: Tuple[int, int]
-        :param tearoff: if True, then can tear the menu off from the window ans use as a floating window. Very cool effect
-        :type tearoff: (bool)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Value that uniquely identifies this element from all other elements. Used when Finding an element or in return values. Must be unique to the window
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+    def __init__(self, menu_definition, background_color=None, size=(None, None), tearoff=False, pad=None, key=None, visible=True, metadata=None):
+        '''
+        Menu Element
+        :param menu_definition:
+        :param background_color:
+        :param size:
+        :param tearoff:
+        :param pad:
+        :param key:
+        '''
         self.BackgroundColor = background_color if background_color is not None else DEFAULT_BACKGROUND_COLOR
-        self.MenuItemTextColor = theme_text_color()
-        self.MenuItemBackgroundColor = theme_background_color()
         self.MenuDefinition = menu_definition
         self.TKMenu = None
         self.Tearoff = tearoff
@@ -3317,68 +2610,27 @@ class Table(Element):
     def __init__(self, values, headings=None, visible_column_map=None, col_widths=None, def_col_width=10,
                  auto_size_columns=True, max_col_width=20, select_mode=None, display_row_numbers=False, num_rows=None,
                  font=None, justification='right',header_text_color=None, header_background_color=None, header_font=None,  text_color=None, background_color=None, alternating_row_color=None,
-                 size=(None, None), change_submits=False, enable_events=False, bind_return_key=False, pad=None, key=None, k=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param values: ???
-        :type values: List[List[Union[str, int, float]]]
-        :param headings: The headings to show on the top line
-        :type headings: Union[List[str], Tuple[str]]
-        :param visible_column_map: One entry for each column. False indicates the column is not shown
-        :type visible_column_map: List[bool]
-        :param col_widths: Number of characters that each column will occupy
-        :type col_widths: List[int]
-        :param def_col_width: Default column width in characters
-        :type def_col_width: (int)
-        :param auto_size_columns: if True columns will be sized automatically
-        :type auto_size_columns: (bool)
-        :param max_col_width: Maximum width for all columns in characters
-        :type max_col_width: (int)
-        :param select_mode: Select Mode. Valid values start with "TABLE_SELECT_MODE_".  Valid values are: TABLE_SELECT_MODE_NONE TABLE_SELECT_MODE_BROWSE TABLE_SELECT_MODE_EXTENDED
-        :type select_mode: (enum)
-        :param display_row_numbers: if True, the first column of the table will be the row #
-        :type display_row_numbers: (bool)
-        :param num_rows: The number of rows of the table to display at a time
-        :type num_rows: (int)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param justification: 'left', 'right', 'center' are valid choices
-        :type justification: (str)
-        :param header_text_color: sets the text color for the header
-        :type header_text_color: (str)
-        :param header_background_color: sets the background color for the header
-        :type header_background_color: (str)
-        :param header_font: specifies the font family, size, etc
-        :type header_font: Union[str, Tuple[str, int]]
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param alternating_row_color: if set then every other row will have this color in the background.
-        :type alternating_row_color: (str)
-        :param size: DO NOT USE! Use num_rows instead
-        :type size: Tuple[int, int]
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Table events happen when row is clicked
-        :type enable_events: (bool)
-        :param bind_return_key: if True, pressing return key will cause event coming from Table, ALSO a left button double click will generate an event if this parameter is True
-        :type bind_return_key: (bool)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+                 size=(None, None), change_submits=False, enable_events=False, bind_return_key=False, pad=None, key=None, tooltip=None, visible=True, size_px=(None,None), metadata=None):
+        '''
+        Table Element
+        :param values:
+        :param headings:
+        :param visible_column_map:
+        :param col_widths:
+        :param def_col_width:
+        :param auto_size_columns:
+        :param max_col_width:
+        :param select_mode:
+        :param display_row_numbers:
+        :param font:
+        :param justification:
+        :param text_color:
+        :param background_color:
+        :param size:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.Values = values
         self.ColumnHeadings = headings
         self.ColumnsToDisplay = visible_column_map
@@ -3388,8 +2640,8 @@ class Table(Element):
         self.AutoSizeColumns = auto_size_columns
         self.BackgroundColor = background_color if background_color is not None else DEFAULT_BACKGROUND_COLOR
         self.TextColor = text_color
-        self.HeaderTextColor = header_text_color if header_text_color is not None else theme_input_text_color()
-        self.HeaderBackgroundColor = header_background_color if header_background_color is not None else theme_input_background_color()
+        self.HeaderTextColor = header_text_color if header_text_color is not None else LOOK_AND_FEEL_TABLE[CURRENT_LOOK_AND_FEEL]['TEXT_INPUT']
+        self.HeaderBackgroundColor = header_background_color if header_background_color is not None else LOOK_AND_FEEL_TABLE[CURRENT_LOOK_AND_FEEL]['INPUT']
         self.HeaderFont = header_font
         self.Justification = justification
         self.InitialState = None
@@ -3515,67 +2767,26 @@ class Tree(Element):
     def __init__(self, data=None, headings=None, visible_column_map=None, col_widths=None, col0_width=10,
                  def_col_width=10, auto_size_columns=True, max_col_width=20, select_mode=None, show_expanded=False,
                  change_submits=False, enable_events=False, font=None, size=(200,600),
-                 justification='right', header_text_color=None, header_background_color=None, header_font=None,  text_color=None, background_color=None, num_rows=None, pad=None, key=None, k=None,
+                 justification='right', text_color=None, background_color=None, num_rows=None, pad=None, key=None,
                  tooltip=None, visible=True, size_px=(None,None), metadata=None):
-        """
-        :param data: The data represented using a PySimpleGUI provided TreeData class
-        :type data: (TreeData)
-        :param headings: List of individual headings for each column
-        :type headings: List[str]
-        :param visible_column_map: Determines if a column should be visible. If left empty, all columns will be shown
-        :type visible_column_map: List[bool]
-        :param col_widths: List of column widths so that individual column widths can be controlled
-        :type col_widths: List[int]
-        :param col0_width: Size of Column 0 which is where the row numbers will be optionally shown
-        :type col0_width: (int)
-        :param def_col_width: default column width
-        :type def_col_width: (int)
-        :param auto_size_columns: if True, the size of a column is determined  using the contents of the column
-        :type auto_size_columns: (bool)
-        :param max_col_width: the maximum size a column can be
-        :type max_col_width: (int)
-        :param select_mode: Use same values as found on Table Element.  Valid values include: TABLE_SELECT_MODE_NONE TABLE_SELECT_MODE_BROWSE TABLE_SELECT_MODE_EXTENDED
-        :type select_mode: (enum)
-        :param show_expanded: if True then the tree will be initially shown with all nodes completely expanded
-        :type show_expanded: (bool)
-        :param change_submits: DO NOT USE. Only listed for backwards compat - Use enable_events instead
-        :type change_submits: (bool)
-        :param enable_events: Turns on the element specific events. Tree events happen when row is clicked
-        :type enable_events: (bool)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param size: ???
-        :type size: ???
-        :param justification: 'left', 'right', 'center' are valid choices
-        :type justification: (str)
-        :param header_text_color: sets the text color for the header
-        :type header_text_color: (str)
-        :param header_background_color: sets the background color for the header
-        :type header_background_color: (str)
-        :param header_font: specifies the font family, size, etc
-        :type header_font: Union[str, Tuple[str, int]]
-        :param text_color: color of the text
-        :type text_color: (str)
-        :param background_color: color of background
-        :type background_color: (str)
-        :param num_rows: The number of rows of the table to display at a time
-        :type num_rows: (int)
-        :param pad: Amount of padding to put around element (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-        :param key: Used with window.FindElement and with return values to uniquely identify this element to uniquely identify this element
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        :param tooltip: text, that will appear when mouse hovers over the element
-        :type tooltip: (str)
-        :param visible: set visibility state of the element
-        :type visible: (bool)
-        :param size_px: size in pixels (width, height). Will override the size parameter
-        :type size_px: Tupple[int, int] (width, height)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
-        key = key if key is not None else k
+        '''
+        Tree Element
+        :param headings:
+        :param visible_column_map:
+        :param col_widths:
+        :param def_col_width:
+        :param auto_size_columns:
+        :param max_col_width:
+        :param select_mode:
+        :param font:
+        :param justification:
+        :param text_color:
+        :param background_color:
+        :param num_rows:
+        :param pad:
+        :param key:
+        :param tooltip:
+        '''
         self.TreeData = data
         self.ColumnHeadings = headings
         self.ColumnsToDisplay = visible_column_map
@@ -3585,9 +2796,6 @@ class Tree(Element):
         self.AutoSizeColumns = auto_size_columns
         self.BackgroundColor = background_color if background_color is not None else DEFAULT_BACKGROUND_COLOR
         self.TextColor = text_color
-        self.HeaderTextColor = header_text_color if header_text_color is not None else theme_input_text_color()
-        self.HeaderBackgroundColor = header_background_color if header_background_color is not None else theme_input_background_color()
-        self.HeaderFont = header_font
         self.Justification = justification
         self.InitialState = None
         self.SelectMode = select_mode
@@ -3727,14 +2935,11 @@ class TreeData(object):
 #                           Error Element                                #
 # ---------------------------------------------------------------------- #
 class ErrorElement(Element):
-    def __init__(self, key=None, k=None):
-        """
+    def __init__(self, key=None):
+        '''
         Error Element
-        :param key: key for uniquely identify this element (for window.FindElement)
-        :type key: (Any)
-        :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-        :type k: Union[str, int, tuple, object]
-        """
+        :param key:
+        '''
         self.Key = key
         self.Widget = None
 
@@ -3768,21 +2973,14 @@ Pane = ErrorElement
 # ------------------------------------------------------------------------- #
 class SystemTray:
     def __init__(self, menu=None, filename=None, data=None, data_base64=None, tooltip=None, metadata=None):
-        """
+        '''
         SystemTray - create an icon in the system tray
-        :param menu: Menu definition. Example - ['UNUSED', ['My', 'Simple', '---', 'Menu', 'Exit']]
-        :type menu: List[List[List[str] or str]]
+        :param menu: Menu definition
         :param filename: filename for icon
-        :type filename: (str)
-        :param data: in-ram image for icon (same as data_base64 parm)
-        :type data: (bytes)
-        :param data_base64: base-64 data for icon
-        :type data_base64: (bytes)
+        :param data: in-ram image for icon
+        :param data_base64: basee-64 data for icon
         :param tooltip: tooltip string
-        :type tooltip: (str)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
+        '''
         self.Menu = menu
         self.TrayIcon = None
         self.Shown = False
@@ -3851,11 +3049,11 @@ class SystemTray:
 
 
     def Read(self, timeout=None):
-        """
+        '''
         Reads the context menu
         :param timeout: Optional.  Any value other than None indicates a non-blocking read
         :return:
-        """
+        '''
         if not self.Shown:
             self.Shown = True
             self.TrayIcon.show()
@@ -3886,7 +3084,7 @@ class SystemTray:
 
 
     def ShowMessage(self, title, message, filename=None, data=None, data_base64=None, messageicon=None, time=10000):
-        """
+        '''
         Shows a balloon above icon in system tray
         :param title:  Title shown in balloon
         :param message: Message to be displayed
@@ -3895,7 +3093,7 @@ class SystemTray:
         :param data_base64: Optional base64 icon
         :param time: How long to display message in milliseconds
         :return:
-        """
+        '''
         qicon = None
         if filename is not None:
             qicon = QIcon(filename)
@@ -3922,17 +3120,17 @@ class SystemTray:
         return self
 
     def Close(self):
-        """
+        '''
 
         :return:
-        """
+        '''
         self.Hide()
         # Don't close app because windows could be depending on it
         # self.App.quit()
 
 
     def Update(self, menu=None, tooltip=None,filename=None, data=None, data_base64=None,):
-        """
+        '''
         Updates the menu, tooltip or icon
         :param menu: menu defintion
         :param tooltip: string representing tooltip
@@ -3940,7 +3138,7 @@ class SystemTray:
         :param data:  icon raw image
         :param data_base64: icon base 64 image
         :return:
-        """
+        '''
         # Menu
         if menu is not None:
             self.Menu = menu
@@ -3987,75 +3185,37 @@ class Window:
     active_popups = {}
 
     def __init__(self, title, layout=None, default_element_size=DEFAULT_ELEMENT_SIZE, default_button_element_size=(None, None),
-                 auto_size_text=None, auto_size_buttons=None, location=(None, None), size=(None, None), element_padding=None, margins=(None, None),button_color=None, font=None, progress_bar_color=(None, None), background_color=None, border_depth=None, auto_close=False, auto_close_duration=DEFAULT_AUTOCLOSE_TIME, icon=DEFAULT_WINDOW_ICON, force_toplevel=False, alpha_channel=1, return_keyboard_events=False, use_default_focus=True, text_justification=None, element_justification='float', no_titlebar=False, grab_anywhere=False, keep_on_top=False, resizable=True, disable_close=False, disable_minimize=False, background_image=None, finalize=False, metadata=None):
-        """
-        :param title: The title that will be displayed in the Titlebar and on the Taskbar
-        :type title: (str)
-        :param layout: The layout for the window. Can also be specified in the Layout method
-        :type layout: List[List[Elements]]
-        :param default_element_size: size in characters (wide) and rows (high) for all elements in this window
-        :type default_element_size: Tuple[int, int] - (width, height)
-        :param default_button_element_size: (width, height) size in characters (wide) and rows (high) for all Button elements in this window
-        :type default_button_element_size: Tuple[int, int]
-        :param auto_size_text: True if Elements in Window should be sized to exactly fir the length of text
-        :type auto_size_text: (bool)
-        :param auto_size_buttons: True if Buttons in this Window should be sized to exactly fit the text on this.
-        :type auto_size_buttons: (bool)
-        :param location: (x,y) location, in pixels, to locate the upper left corner of the window on the screen. Default is to center on screen.
-        :type location: Tuple[int, int]
-        :param size: (width, height) size in pixels for this window. Normally the window is autosized to fit contents, not set to an absolute size by the user
-        :type size: Tuple[int, int]
-        :param element_padding: Default amount of padding to put around elements in window (left/right, top/bottom) or ((left, right), (top, bottom))
-        :type element_padding: Tuple[int, int] or ((int, int),(int,int))
-        :param margins: (left/right, top/bottom) Not yet implemented!  Parameter here for potability purposes.
-        :type margins: Tuple[int, int]
-        :param button_color: Default button colors for all buttons in the window
-        :type button_color: Tuple[str, str] == (text color, button color)
-        :param font: specifies the font family, size, etc
-        :type font: Union[str, Tuple[str, int]]
-        :param progress_bar_color: (bar color, background color) Sets the default colors for all progress bars in the window
-        :type progress_bar_color: Tuple[str, str]
-        :param background_color: color of background
-        :type background_color: (str)
-        :param border_depth: Default border depth (width) for all elements in the window
-        :type border_depth: (int)
-        :param auto_close: If True, the window will automatically close itself
-        :type auto_close: (bool)
-        :param auto_close_duration: Number of seconds to wait before closing the window
-        :type auto_close_duration: (int)
-        :param icon: Can be either a filename or Base64 value. For Windows if filename, it MUST be ICO format. For Linux, must NOT be ICO
-        :type icon: Union[str, str]
-        :param force_toplevel: If True will cause this window to skip the normal use of a hidden master window
-        :type force_toplevel: (bool)
-        :param alpha_channel: Sets the opacity of the window. 0 = invisible 1 = completely visible. Values bewteen 0 & 1 will produce semi-transparent windows in SOME environments (The Raspberry Pi always has this value at 1 and cannot change.
-        :type alpha_channel: (float)
-        :param return_keyboard_events: if True key presses on the keyboard will be returned as Events from Read calls
-        :type return_keyboard_events: (bool)
-        :param use_default_focus: If True will use the default focus algorithm to set the focus to the "Correct" element
-        :type use_default_focus: (bool)
-        :param text_justification: Default text justification for all Text Elements in window
-        :type text_justification: Union['left', 'right', 'center']
-        :param element_justification: All elements in the Window itself will have this justification 'left', 'right', 'center' are valid values
-        :type element_justification: (str)
-        :param no_titlebar: If true, no titlebar nor frame will be shown on window. This means you cannot minimize the window and it will not show up on the taskbar
-        :type no_titlebar: (bool)
-        :param grab_anywhere: If True can use mouse to click and drag to move the window. Almost every location of the window will work except input fields on some systems
-        :type grab_anywhere: (bool)
-        :param keep_on_top: If True, window will be created on top of all other windows on screen. It can be bumped down if another window created with this parm
-        :type keep_on_top: (bool)
-        :param resizable: If True, allows the user to resize the window. Note the not all Elements will change size or location when resizing.
-        :type resizable: (bool)
-        :param disable_close: If True, the X button in the top right corner of the window will no work.  Use with caution and always give a way out toyour users
-        :type disable_close: (bool)
-        :param disable_minimize: if True the user won't be able to minimize window.  Good for taking over entire screen and staying that way.
-        :type disable_minimize: (bool)
-        :param background_image: ???
-        :type background_image: ???
-        :param finalize: If True then the Finalize method will be called. Use this rather than chaining .Finalize for cleaner code
-        :type finalize: (bool)
-        :param metadata: User metadata that can be set to ANYTHING
-        :type metadata: (Any)
-        """
+                 auto_size_text=None, auto_size_buttons=None, location=(None, None), size=(None, None), element_padding=None, button_color=None, font=None, progress_bar_color=(None, None), background_color=None, border_depth=None, auto_close=False, auto_close_duration=DEFAULT_AUTOCLOSE_TIME, icon=DEFAULT_WINDOW_ICON, force_toplevel=False, alpha_channel=1, return_keyboard_events=False, use_default_focus=True, text_justification=None, element_justification='float', no_titlebar=False, grab_anywhere=False, keep_on_top=False, resizable=True, disable_close=False, disable_minimize=False, background_image=None, finalize=False, metadata=None):
+        '''
+
+        :param title:
+        :param default_element_size:
+        :param default_button_element_size:
+        :param auto_size_text:
+        :param auto_size_buttons:
+        :param location:
+        :param size:
+        :param element_padding:
+        :param button_color:
+        :param font:
+        :param progress_bar_color:
+        :param background_color:
+        :param border_depth:
+        :param auto_close:
+        :param auto_close_duration:
+        :param icon:
+        :param force_toplevel:
+        :param alpha_channel:
+        :param return_keyboard_events:
+        :param use_default_focus:
+        :param text_justification:
+        :param no_titlebar:
+        :param grab_anywhere:
+        :param keep_on_top:
+        :param resizable:
+        :param disable_close:
+        :param background_image:
+        '''
         self.AutoSizeText = auto_size_text if auto_size_text is not None else DEFAULT_AUTOSIZE_TEXT
         self.AutoSizeButtons = auto_size_buttons if auto_size_buttons is not None else DEFAULT_AUTOSIZE_BUTTONS
         self.Title = title
@@ -4116,8 +3276,7 @@ class Window:
         self.UniqueKeyCounter = 0
         self.metadata = metadata
         self.ElementJustification = element_justification
-        self.AllKeysDict = {}
-        self.margins = margins
+
 
         if layout is not None:
             self.Layout(layout)
@@ -4137,13 +3296,13 @@ class Window:
 
     # ------------------------- Add ONE Row to Form ------------------------- #
     def AddRow(self, *args):
-        """ Parms are a variable number of Elements """
+        ''' Parms are a variable number of Elements '''
         NumRows = len(self.Rows)  # number of existing rows is our row number
         CurrentRowNumber = NumRows  # this row's number
         CurrentRow = []  # start with a blank row and build up
         # -------------------------  Add the elements to a row  ------------------------- #
         for i, element in enumerate(args):  # Loop through list of elements and add them to the row
-            if type(element) is list:
+            if type(element) == list:
                 PopupError('Error creating layout',
                       'Layout has a LIST instead of an ELEMENT',
                       'This means you have a badly placed ]',
@@ -4474,7 +3633,6 @@ class Window:
                                         ELEM_TYPE_INPUT_SLIDER, ELEM_TYPE_GRAPH, ELEM_TYPE_IMAGE,
                                         ELEM_TYPE_INPUT_CHECKBOX, ELEM_TYPE_INPUT_LISTBOX, ELEM_TYPE_INPUT_COMBO,
                                         ELEM_TYPE_INPUT_MULTILINE, ELEM_TYPE_INPUT_OPTION_MENU, ELEM_TYPE_INPUT_SPIN,
-                                        ELEM_TYPE_TABLE, ELEM_TYPE_TREE,
                                         ELEM_TYPE_INPUT_TEXT):
                         element.Key = top_window.DictionaryKeyCounter
                         top_window.DictionaryKeyCounter += 1
@@ -4519,18 +3677,12 @@ class Window:
         return screen_width, screen_height
 
     def Move(self, x, y):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.move(x, y)
 
     def Minimize(self):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.setWindowState(Qt.WindowMinimized)
 
     def Maximize(self):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.setWindowState(Qt.WindowMaximized)
 
 
@@ -4605,25 +3757,17 @@ class Window:
 
 
     def Disable(self):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.setEnabled(False)
 
     def Enable(self):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.setEnabled(True)
 
     def Hide(self):
-        if not self._is_window_created():
-            return
         self._Hidden = True
         self.QT_QMainWindow.hide()
         return
 
     def UnHide(self):
-        if not self._is_window_created():
-            return
         if self._Hidden:
             self.QT_QMainWindow.show()
             self._Hidden = False
@@ -4635,13 +3779,11 @@ class Window:
         self.AlphaChannel = 255
 
     def SetAlpha(self, alpha):
-        """
+        '''
         Change the window's transparency
         :param alpha: From 0 to 1 with 0 being completely transparent
         :return:
-        """
-        if not self._is_window_created():
-            return
+        '''
         self._AlphaChannel = alpha
         if self._AlphaChannel is not None:
             self.QT_QMainWindow.setWindowOpacity(self._AlphaChannel)
@@ -4652,39 +3794,18 @@ class Window:
 
     @AlphaChannel.setter
     def AlphaChannel(self, alpha):
-        if not self._is_window_created():
-            return
         self._AlphaChannel = alpha
         if self._AlphaChannel is not None:
             self.QT_QMainWindow.setWindowOpacity(self._AlphaChannel)
 
     def BringToFront(self):
-        if not self._is_window_created():
-            return
         self.QTMainWindow.activateWindow(self.QT_QMainWindow)
         self.QTMainWindow.raise_(self.QT_QMainWindow)
 
 
     def CurrentLocation(self):
-        if not self._is_window_created():
-            return
         location = self.QT_QMainWindow.geometry()
         return location.left(), location.top()
-
-
-    def set_title(self, title):
-        """
-        Change the title of the window
-
-        :param title: The string to set the title to
-        :type title: (str)
-        """
-        if not self._is_window_created():
-            return
-        self.Title = str(title)
-        self.QT_QMainWindow.setWindowTitle(self.Title)
-
-
 
     class QTMainWindow(QWidget):
         def __init__(self,enable_key_events, window):
@@ -4767,28 +3888,12 @@ class Window:
 
     @property
     def Size(self):
-        if not self._is_window_created():
-            return
         size =  self.QT_QMainWindow.sizeHint()
         return [size.width(), size.height()]
 
     @Size.setter
     def Size(self, size):
-        if not self._is_window_created():
-            return
         self.QT_QMainWindow.resize(QSize(size[0], size[1]))
-
-
-    def _is_window_created(self):
-        if self.QT_QMainWindow is None:
-            warnings.warn('You cannot perform operations on a Window until it is read or finalized. Adding a "finalize=True" parameter to your Window creation will fix this', UserWarning)
-            popup_error('You cannot perform operations on a Window until it is read or finalized.',
-                        'Yea, I know, it\'s a weird thing, but easy to fix.... ',
-                         'Adding a "finalize=True" parameter to your Window creation will likely fix this', image=FACE_PALM)
-            return False
-        return True
-
-
 
     def __getitem__(self, key):
         """
@@ -4796,10 +3901,8 @@ class Window:
         This is "called" by writing code as thus:
         window['element key'].Update
 
-        :param key: The key to find
-        :type key: Union[str, int, tuple, object]
+        :param key: (Any) The key to find
         :return: Union[Element, None] The element found or None if no element was found
-        :rtype: Element
         """
         try:
             return self.Element(key)
@@ -4813,16 +3916,11 @@ class Window:
         window() == window.Read()
         window(timeout=50) == window.Read(timeout=50)
 
-        :param args: *
-        :type args: (any)
-        :param kwargs: **
-        :type kaargs: (any)
+        :param args:
+        :param kwargs:
         :return: Tuple[Any, Dict[Any:Any]] The famous event, values that Read returns.
         """
         return self.Read(*args, **kwargs)
-
-
-
 
 
     add_row = AddRow
@@ -4857,139 +3955,6 @@ class Window:
     visibility_changed = VisibilityChanged
 
 FlexForm = Window
-
-
-
-
-
-class QtStyle(object):
-    '''
-        API
-
-        # step 1 - make a style
-        ss = QtStyle(QLabel)
-
-        # step 2 - add fields
-        ss['font'] = create_style_from_font()
-        ss['background_color'] = (color, color_default)
-        ss['color'] = (color, color_default)
-        # step 2.1 - add additions
-        ss.append_css_to_end.append(" QScrollBar:vertical { ... some css here ...  } ")
-        # step 2.2 - add anchor
-        ss.my_anchor = '::chunk'
-
-        # step 3 - build result
-        css_str = ss.build_css_string()
-        qt_widget.setStyleSheet(css_str)
-
-        ====== Special fields
-        - font
-        - margin
-        Why they are special? Because of the formatting.
-
-        === === ===
-        made by nngogol
-    '''
-
-    def __init__(self, widget_name=''):
-        self.widget_name = widget_name
-        self.css_props = {}
-        self.my_anchor = None
-
-        self.logging = True
-        self.logging = not True
-        self.append_css_to_end = []
-
-        self.make_secure_check = True  # Check if "css property is valid, i.e. it's present in default names".
-        #                               Make makes development safer, if you have a erro in spelling css-property
-        #                               In production: it can be disabled, I guess.
-
-    def __setitem__(self, css_prop_name, css_prop_value):
-
-        css_prop_name = css_prop_name.replace('_', '-')
-        # validation
-        if not isinstance(css_prop_value, (tuple, list, str)):
-            raise Exception('Bad value fro css property -> %s.' % css_prop_value)
-        if self.make_secure_check:
-            if not is_valid_css_prop(css_prop_name):
-                raise Exception('Bad css property name: ' % css_prop_name)
-
-        self.css_props[css_prop_name] = css_prop_value
-
-    def build_css_string(self):
-        # no css props added -> return empty string
-        if not self.css_props:  # empty case
-            print(f' final_str # {self.widget_name} = ""')
-            return ''
-
-        css_props_str_list = []
-        for key, value in self.css_props.items():
-            # special cases:
-            if key == 'margin' or key == 'padding':
-                # validation
-                if not isinstance(value, (tuple, list)):
-                    raise Exception('Cant handle this TYPE for margin property : %s ' % str(type(value)))
-
-                result_css_string = ''
-
-                if len(value) == 4:
-                    # skip all zeros
-                    if value[0] == value[1] == value[2] == value[3] == 0: result_css_string = ''
-
-                    result_css_string = '{} : {}px {}px {}px {}px;'.format(key, *value)
-                elif len(value) == 1:
-                    # skip all zeros
-                    if value[0] == 0: continue
-
-                    result_css_string = '{} : {}px;'.format(key, value[0])
-                else:
-                    raise Exception('Bad value for margin/padding property: ' % str(value))
-
-                # # Fix for this case:
-                # # Wrong:    margin: 0px;
-                # # Right:    margin: 0;
-                # result_css_string = result_css_string.replace(': 0px', ': 0')
-
-                css_props_str_list.append(result_css_string)
-
-                continue
-            # if key == 'border': ...
-
-            # it's a css string! Format: 'propery: value;''
-            if isinstance(value, str):
-                # is css prop name + css prop value
-                if ':' in value:
-                    css_props_str_list.append(value)
-                # is css value
-                else:
-                    css_props_str_list.append(_to_css_prop(key, value))
-                # we continue, because it was 'string type parsing'
-                continue
-
-            isnot = None
-            # it's a pair! Format: (val, default_val)
-            if isinstance(value, (tuple, list)):
-                user_css_prop_value, isnot = value
-
-            if user_css_prop_value is not None and user_css_prop_value != isnot:
-                css_props_str_list.append(_to_css_prop(key, user_css_prop_value))
-
-        # join all props
-        css_all = ''.join(css_props_str_list)
-        final_str = css_all
-        if self.widget_name:
-            my_anchor = '' if self.my_anchor is None else self.my_anchor
-            final_str = '%s%s { %s }' % (self.widget_name, my_anchor, css_all)
-
-        # if needed: append some css from self.append_css_to_end
-        final_str += ' '.join(self.append_css_to_end)
-
-        if self.logging: print(f'final css string (self.widget_name): {final_str}')
-        return final_str
-
-    def __repr__(self):
-        return self.build_css_string()
-
 
 
 
@@ -5038,37 +4003,31 @@ def convert_tkinter_filetypes_to_qt(filetypes):
 # =========================================================================== #
 def create_style_from_font(font):
     """
-    Convert from font string/tuple into a Qt style sheet string
-    :param font: "Arial 10 Bold" or ('Arial', 10, 'Bold')
+    Convert from font string/tyuple into a Qt style sheet string
+    :param font: "Arial 10 Bold" or ('Arial', 10, 'Bold)
     :return: style string that can be combined with other style strings
     """
 
-    if font is None: return ''
-    _font = font.split(' ') if type(font) is str else font
+    if font is None:
+        return ''
 
-    # parsing name + size
-    font_name, font_size = _font[:2]
-    # parsing options:
-    is_bold, is_underline = False, False
-    if len(_font) > 2:
-        options = _font[2:]
-        for some_option in options:
-            if some_option == 'underline':
-                is_underline = True
+    if type(font) is str:
+        _font = font.split(' ')
+    else:
+        _font = font
+
+    style = ''
+    style += 'font-family: %s;\n' % _font[0]
+    style += 'font-size: %spt;\n' % _font[1]
+    font_items = ''
+    for item in _font[2:]:
+        if item == 'underline':
+            style += 'text-decoration: underline;\n'
         else:
-                is_bold = True
-
-    # build
-    is_bold_text      = 'font-weight : bold;'         if is_bold else ''
-    is_underline_text = 'text-decoration: underline;' if is_underline else ''
-
-    return textwrap.dedent(f'''
-        {is_underline_text}
-        {is_bold_text}
-        font-family: "{font_name}";
-        font-size: {font_size}pt;
-        '''.strip()).replace('\n', '')
-
+            font_items += item + ' '
+    if font_items != '':
+        style += 'font: %s;\n' % (font_items)
+    return style
 
 def set_widget_visiblity(widget, visible):
     if visible is False:
@@ -5092,40 +4051,40 @@ def set_widget_visiblity(widget, visible):
 # -------------------------  FOLDER BROWSE Element lazy function  ------------------------- #
 def FolderBrowse(button_text='Browse', target=(ThisRow, -1), initial_folder=None, tooltip=None, size=(None, None),
                  auto_size_button=None, button_color=None, disabled=False, change_submits=False, enable_events=False, font=None, pad=None,
-                 key=None, k=None, metadata=None):
+                 key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_BROWSE_FOLDER, target=target,
                   initial_folder=initial_folder, tooltip=tooltip, size=size, auto_size_button=auto_size_button,
                   disabled=disabled, button_color=button_color, change_submits=change_submits, enable_events=enable_events, font=font, pad=pad,
-                  key=key, k=k, metadata=metadata)
+                  key=key, metadata=metadata)
 
 
 # -------------------------  FILE BROWSE Element lazy function  ------------------------- #
 def FileBrowse(button_text='Browse', target=(ThisRow, -1), file_types=(("ALL Files", "*"),), initial_folder=None,
                tooltip=None, size=(None, None), auto_size_button=None, button_color=None, change_submits=False, enable_events=False,
                font=None, disabled=False,
-               pad=None, key=None, k=None, metadata=None):
+               pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_BROWSE_FILE, target=target, file_types=file_types,
                   initial_folder=initial_folder, tooltip=tooltip, size=size, auto_size_button=auto_size_button,
                   change_submits=change_submits, enable_events=enable_events, disabled=disabled, button_color=button_color, font=font, pad=pad,
-                  key=key, k=k, metadata=metadata)
+                  key=key, metadata=metadata)
 
 
 # -------------------------  FILES BROWSE Element (Multiple file selection) lazy function  ------------------------- #
 def FilesBrowse(button_text='Browse', target=(ThisRow, -1), file_types=(("ALL Files", "*"),), disabled=False,
                 initial_folder=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None,
                 change_submits=False, enable_events=False,
-                font=None, pad=None, key=None, k=None, metadata=None):
+                font=None, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_BROWSE_FILES, target=target, file_types=file_types,
                   initial_folder=initial_folder, change_submits=change_submits, enable_events=enable_events, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button,
-                  disabled=disabled, button_color=button_color, font=font, pad=pad, key=key, k=k, metadata=metadata)
+                  disabled=disabled, button_color=button_color, font=font, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  FILE BROWSE Element lazy function  ------------------------- #
 def FileSaveAs(button_text='Save As...', target=(ThisRow, -1), file_types=(("ALL Files", "*"),), initial_folder=None,
                disabled=False, tooltip=None, size=(None, None), auto_size_button=None, button_color=None,
                change_submits=False, enable_events=False, font=None,
-               pad=None, key=None, k=None, metadata=None):
+               pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_SAVEAS_FILE, target=target, file_types=file_types,
                   initial_folder=initial_folder, tooltip=tooltip, size=size, disabled=disabled,
                   auto_size_button=auto_size_button, button_color=button_color, change_submits=change_submits, enable_events=enable_events,
@@ -5136,122 +4095,122 @@ def FileSaveAs(button_text='Save As...', target=(ThisRow, -1), file_types=(("ALL
 def SaveAs(button_text='Save As...', target=(ThisRow, -1), file_types=(("ALL Files", "*"),), initial_folder=None,
            disabled=False, tooltip=None, size=(None, None), auto_size_button=None, button_color=None,
            change_submits=False, enable_events=False, font=None,
-           pad=None, key=None, k=None, metadata=None):
+           pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_SAVEAS_FILE, target=target, file_types=file_types,
                   initial_folder=initial_folder, tooltip=tooltip, size=size, disabled=disabled,
                   auto_size_button=auto_size_button, button_color=button_color, change_submits=change_submits, enable_events=enable_events,
-                  font=font, pad=pad, key=key, k=k, metadata=metadata)
+                  font=font, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  SAVE BUTTON Element lazy function  ------------------------- #
 def Save(button_text='Save', size=(None, None), auto_size_button=None, button_color=None, bind_return_key=True,
-         disabled=False, tooltip=None, font=None, focus=False, pad=None, key=None, k=None, metadata=None):
+         disabled=False, tooltip=None, font=None, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  SUBMIT BUTTON Element lazy function  ------------------------- #
 def Submit(button_text='Submit', size=(None, None), auto_size_button=None, button_color=None, disabled=False,
-           bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, k=None, metadata=None):
+           bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  OPEN BUTTON Element lazy function  ------------------------- #
 # -------------------------  OPEN BUTTON Element lazy function  ------------------------- #
 def Open(button_text='Open', size=(None, None), auto_size_button=None, button_color=None, disabled=False,
-         bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, k=None, metadata=None):
+         bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  OK BUTTON Element lazy function  ------------------------- #
 def OK(button_text='OK', size=(None, None), auto_size_button=None, button_color=None, disabled=False,
-       bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, k=None, metadata=None):
+       bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  YES BUTTON Element lazy function  ------------------------- #
 def Ok(button_text='Ok', size=(None, None), auto_size_button=None, button_color=None, disabled=False,
-       bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, k=None, metadata=None):
+       bind_return_key=True, tooltip=None, font=None, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  CANCEL BUTTON Element lazy function  ------------------------- #
 def Cancel(button_text='Cancel', size=(None, None), auto_size_button=None, button_color=None, disabled=False,
-           tooltip=None, font=None, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
+           tooltip=None, font=None, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  QUIT BUTTON Element lazy function  ------------------------- #
 def Quit(button_text='Quit', size=(None, None), auto_size_button=None, button_color=None, disabled=False, tooltip=None,
-         font=None, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
+         font=None, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  Exit BUTTON Element lazy function  ------------------------- #
 def Exit(button_text='Exit', size=(None, None), auto_size_button=None, button_color=None, disabled=False, tooltip=None,
-         font=None, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
+         font=None, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  YES BUTTON Element lazy function  ------------------------- #
 def Yes(button_text='Yes', size=(None, None), auto_size_button=None, button_color=None, disabled=False, tooltip=None,
-        font=None, bind_return_key=True, focus=False, pad=None, key=None, k=None, metadata=None):
+        font=None, bind_return_key=True, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  NO BUTTON Element lazy function  ------------------------- #
 def No(button_text='No', size=(None, None), auto_size_button=None, button_color=None, disabled=False, tooltip=None,
-       font=None, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
+       font=None, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  NO BUTTON Element lazy function  ------------------------- #
 def Help(button_text='Help', size=(None, None), auto_size_button=None, button_color=None, disabled=False, font=None,
-         tooltip=None, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
+         tooltip=None, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  GENERIC BUTTON Element lazy function  ------------------------- #
 def SimpleButton(button_text, image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,
                  border_width=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None,
-                 font=None, bind_return_key=False, disabled=False, focus=False, pad=None, key=None, k=None, metadata=None):
+                 font=None, bind_return_key=False, disabled=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_CLOSES_WIN, image_filename=image_filename,
                   image_data=image_data, image_size=image_size, image_subsample=image_subsample,
                   border_width=border_width, tooltip=tooltip, disabled=disabled, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  CLOSE BUTTON Element lazy function  ------------------------- #
 def CloseButton(button_text, image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,
                 border_width=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None, font=None,
-                bind_return_key=False, disabled=False, focus=False, pad=None, key=None, k=None, metadata=None):
+                bind_return_key=False, disabled=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_CLOSES_WIN, image_filename=image_filename,
                   image_data=image_data, image_size=image_size, image_subsample=image_subsample,
                   border_width=border_width, tooltip=tooltip, disabled=disabled, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 CButton = CloseButton
@@ -5260,51 +4219,12 @@ CButton = CloseButton
 # -------------------------  GENERIC BUTTON Element lazy function  ------------------------- #
 def ReadButton(button_text, image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,
                border_width=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None, font=None,
-               bind_return_key=False, disabled=False, focus=False, pad=None, key=None, k=None, metadata=None):
-    """
-    :param button_text: text in the button
-    :type button_text: (str)
-    :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-    :type image_filename: (str)
-    :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-    :type image_data: Union[bytes, str]
-    :param image_size: Size of the image in pixels (width, height)
-    :type image_size: Tuple[int, int]
-    :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-    :type image_subsample: (int)
-    :param border_width: width of border around element
-    :type border_width: (int)
-    :param tooltip: text, that will appear when mouse hovers over the element
-    :type tooltip: (str)
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param auto_size_button: True if button size is determined by button text
-    :type auto_size_button: (bool)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param font: specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param bind_return_key: (Default = False) If True, then the return key will cause a the Listbox to generate an event
-    :type bind_return_key: (bool)
-    :param disabled: set disable state for element (Default = False)
-    :type disabled: (bool)
-    :param focus: if focus should be set to this
-    :type focus: idk_yetReally
-    :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-    :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-    :param key: key for uniquely identify this element (for window.FindElement)
-    :type key: Union[str, int, tuple, object]
-    :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-    :type k: Union[str, int, tuple, object]
-    :param metadata: Anything you want to store along with this button
-    :type metadata: (Any)
-    """
-
+               bind_return_key=False, disabled=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_READ_FORM, image_filename=image_filename,
                   image_data=image_data, image_size=image_size, image_subsample=image_subsample,
                   border_width=border_width, tooltip=tooltip, size=size, disabled=disabled,
                   auto_size_button=auto_size_button, button_color=button_color, font=font,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 ReadFormButton = ReadButton
@@ -5314,99 +4234,23 @@ RButton = ReadFormButton
 # -------------------------  Realtime BUTTON Element lazy function  ------------------------- #
 def RealtimeButton(button_text, image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,
                    border_width=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None,
-                   font=None, disabled=False, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
-    """
-    :param button_text: text in the button
-    :type button_text: (str)
-    :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-    :type image_filename: (str)
-    :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-    :type image_data: Union[bytes, str]
-    :param image_size: Size of the image in pixels (width, height)
-    :type image_size: Tuple[int, int]
-    :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-    :type image_subsample: (int)
-    :param border_width:  width of border around element
-    :type border_width: (int)
-    :param tooltip: text, that will appear when mouse hovers over the element
-    :type tooltip: (str)
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param auto_size_button: True if button size is determined by button text
-    :type auto_size_button: (bool)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param disabled: set disable state for element (Default = False)
-    :type disabled: (bool)
-    :param bind_return_key: (Default = False) If True, then the return key will cause a the Listbox to generate an event
-    :type bind_return_key: (bool)
-    :param focus: if focus should be set to this
-    :type focus: (bool)
-    :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-    :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-    :param key: key for uniquely identify this element (for window.FindElement)
-    :type key: Union[str, int, tuple, object]
-    :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-    :type k: Union[str, int, tuple, object]
-    :param metadata: Anything you want to store along with this button
-    :type metadata: (Any)
-    """
+                   font=None, disabled=False, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_REALTIME, image_filename=image_filename,
                   image_data=image_data, image_size=image_size, image_subsample=image_subsample,
                   border_width=border_width, tooltip=tooltip, disabled=disabled, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  Dummy BUTTON Element lazy function  ------------------------- #
 def DummyButton(button_text, image_filename=None, image_data=None, image_size=(None, None), image_subsample=None,
                 border_width=None, tooltip=None, size=(None, None), auto_size_button=None, button_color=None, font=None,
-                disabled=False, bind_return_key=False, focus=False, pad=None, key=None, k=None, metadata=None):
-    """
-    :param button_text: text in the button
-    :type button_text: (str)
-    :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-    :type image_filename: (str)
-    :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-    :type image_data: Union[bytes, str]
-    :param image_size: Size of the image in pixels (width, height)
-    :type image_size: Tuple[int, int]
-    :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-    :type image_subsample: (int)
-    :param border_width:  width of border around element
-    :type border_width: (int)
-    :param tooltip: text, that will appear when mouse hovers over the element
-    :type tooltip: (str)
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param auto_size_button: True if button size is determined by button text
-    :type auto_size_button: (bool)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param disabled: set disable state for element (Default = False)
-    :type disabled: (bool)
-    :param bind_return_key: (Default = False) If True, then the return key will cause a the Listbox to generate an event
-    :type bind_return_key: (bool)
-    :param focus: if focus should be set to this
-    :type focus: (bool)
-    :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-    :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-    :param key: key for uniquely identify this element (for window.FindElement)
-    :type key: Union[str, int, tuple, object]
-    :param k: Same as the Key. You can use either k or key. Which ever is set will be used.
-    :type k: Union[str, int, tuple, object]
-    :param metadata: Anything you want to store along with this button
-    :type metadata: (Any)
-    """
+                disabled=False, bind_return_key=False, focus=False, pad=None, key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_CLOSES_WIN_ONLY, image_filename=image_filename,
                   image_data=image_data, image_size=image_size, image_subsample=image_subsample,
                   border_width=border_width, tooltip=tooltip, size=size, auto_size_button=auto_size_button,
                   button_color=button_color, font=font, disabled=disabled, bind_return_key=bind_return_key, focus=focus,
-                  pad=pad, key=key, k=k, metadata=metadata)
+                  pad=pad, key=key, metadata=metadata)
 
 
 # -------------------------  Calendar Chooser Button lazy function  ------------------------- #
@@ -5414,12 +4258,12 @@ def CalendarButton(button_text, target=(None, None), close_when_date_chosen=True
                    image_filename=None, image_data=None, image_size=(None, None),
                    image_subsample=None, tooltip=None, border_width=None, size=(None, None), auto_size_button=None,
                    button_color=None, disabled=False, font=None, bind_return_key=False, focus=False, pad=None,
-                   key=None, k=None, metadata=None):
+                   key=None, metadata=None):
     button = Button(button_text=button_text, button_type=BUTTON_TYPE_CALENDAR_CHOOSER, target=target,
                     image_filename=image_filename, image_data=image_data, image_size=image_size,
                     image_subsample=image_subsample, border_width=border_width, tooltip=tooltip, size=size,
                     auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                    bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                    bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
     button.CalendarCloseWhenChosen = close_when_date_chosen
     button.DefaultDate_M_D_Y = default_date_m_d_y
     return button
@@ -5429,48 +4273,12 @@ def CalendarButton(button_text, target=(None, None), close_when_date_chosen=True
 def ColorChooserButton(button_text, target=(None, None), image_filename=None, image_data=None, image_size=(None, None),
                        image_subsample=None, tooltip=None, border_width=None, size=(None, None), auto_size_button=None,
                        button_color=None, disabled=False, font=None, bind_return_key=False, focus=False, pad=None,
-                       key=None, k=None, metadata=None):
-    """
-    :param button_text: text in the button
-    :type button_text: (str)
-    :param target: key or (row,col) target for the button. Note that -1 for column means 1 element to the left of this one. The constant ThisRow is used to indicate the current row. The Button itself is a valid target for some types of button
-    :type target: Union[str, Tuple[int, int]]
-    :param image_filename: image filename if there is a button image. GIFs and PNGs only.
-    :type image_filename: (str)
-    :param image_data: Raw or Base64 representation of the image to put on button. Choose either filename or data
-    :type image_data: Union[bytes, str]
-    :param image_size: Size of the image in pixels (width, height)
-    :type image_size: Tuple[int, int]
-    :param image_subsample: amount to reduce the size of the image. Divides the size by this number. 2=1/2, 3=1/3, 4=1/4, etc
-    :type image_subsample: (int)
-    :param tooltip: text, that will appear when mouse hovers over the element
-    :type tooltip: (str)
-    :param border_width:  width of border around element
-    :type border_width: (int)
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param auto_size_button: True if button size is determined by button text
-    :type auto_size_button: (bool)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param disabled: set disable state for element (Default = False)
-    :type disabled: (bool)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param bind_return_key: (Default = False) If True, then the return key will cause a the Listbox to generate an event
-    :type bind_return_key: (bool)
-    :param focus: if focus should be set to this
-    :type focus: (bool)
-    :param pad: Amount of padding to put around element in pixels (left/right, top/bottom)
-    :type pad: (int, int) or ((int, int),(int,int)) or (int,(int,int)) or  ((int, int),int)
-    :param metadata: Anything you want to store along with this button
-    :type metadata: (Any)
-    """
+                       key=None, metadata=None):
     return Button(button_text=button_text, button_type=BUTTON_TYPE_COLOR_CHOOSER, target=target,
                   image_filename=image_filename, image_data=image_data, image_size=image_size,
                   image_subsample=image_subsample, border_width=border_width, tooltip=tooltip, size=size,
                   auto_size_button=auto_size_button, button_color=button_color, font=font, disabled=disabled,
-                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, k=k, metadata=metadata)
+                  bind_return_key=bind_return_key, focus=focus, pad=pad, key=key, metadata=metadata)
 
 
 #####################################  -----  RESULTS   ------ ##################################################
@@ -5643,8 +4451,6 @@ def BuildResultsForSubform(form, initialize_only, top_level_form):
                 elif element.Type == ELEM_TYPE_INPUT_SLIDER:
                     value = element.QT_Slider.value()
                 elif element.Type == ELEM_TYPE_INPUT_MULTILINE:
-                    if element.WriteOnly:
-                        continue
                     value = element.QT_TextEdit.toPlainText()
                     if not top_level_form.NonBlocking and not element.do_not_clear and not top_level_form.ReturnKeyboardEvents:
                         element.QT_TextEdit.setText('')
@@ -5839,7 +4645,7 @@ def AddTrayMenuItem(top_menu, sub_menu_info, element, is_sub_menu=False, skip=Fa
         while i < (len(sub_menu_info)):
             item = sub_menu_info[i]
             if i != len(sub_menu_info) - 1:
-                if type(sub_menu_info[i + 1]) is list:
+                if type(sub_menu_info[i + 1]) == list:
                     new_menu = QMenu(top_menu)
                     item = sub_menu_info[i]
                     try:
@@ -5889,22 +4695,8 @@ def AddMenuItem(top_menu, sub_menu_info, element, is_sub_menu=False, skip=False)
         while i < (len(sub_menu_info)):
             item = sub_menu_info[i]
             if i != len(sub_menu_info) - 1:
-                if type(sub_menu_info[i + 1]) is list:
+                if type(sub_menu_info[i + 1]) == list:
                     new_menu = QMenu(top_menu)
-                    #
-                    # # === style ===
-                    # menu_style = _Style('QMenu')
-                    # menu_style['font'] = create_style_from_font(element.Font)
-                    # if element.TextColor is not None and element.TextColor != COLOR_SYSTEM_DEFAULT:
-                    #     menu_style['color'] = element.TextColor
-                    # if element.BackgroundColor is not None and element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    #     menu_style['background-color'] = element.BackgroundColor
-                    # # style['margin'] = full_element_pad
-                    # new_menu.setStyleSheet(menu_style.build_css_string())
-                    # print(menu_style)
-                    # # element.qt_styles = (style,)
-                    # # === style === end
-                    #
                     # Key handling.... strip off key before setting text
                     item = sub_menu_info[i]
                     try:
@@ -5970,31 +4762,45 @@ Q:::::::QQ::::::::Q      t::::::tttt:::::t
 # =====================================   Qt CODE STARTS HERE ====================================================== #
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------------------------------------------------------------------ #
-# to_css_prop(css_prop.replace('_','-'), value)
-def _to_css_prop(key_, val_):
-    return "{}:{}; ".format(key_.replace('_', '-'), val_)
-# def style_generate(qt_element_type, css_props_str):
-#     return '%s {\n %s \n}' % (qt_element_type, css_props_str)
-_valid_css_fields = ['align-content', 'align-items', 'align-self', 'background', 'background-attachment', 'background-color', 'background-image', 'background-position', 'background-size', 'border', 'border-collapse', 'border-image', 'border-radius', 'border-spacing', 'bottom', 'box-decoration-break', 'caret-color', 'clear', 'clip-path', 'color', 'color-adjust', 'column-count', 'column-fill', 'column-gap', 'column-rule', 'column-rule-color', 'column-rule-style', 'column-rule-width', 'column-span', 'column-width', 'columns', 'contain', 'content', 'counter-increment', 'counter-reset', 'counter-set', 'cursor', 'direction', 'display', 'empty-cells', 'fill', 'filter', 'flex', 'flex-basis', 'flex-direction', 'flex-flow', 'flex-grow', 'flex-shrink', 'flex-wrap', 'float', 'font', 'font-display', 'font-family', 'font-feature-settings', 'font-kerning', 'font-optical-sizing', 'font-size', 'font-size-adjust', 'font-stretch', 'font-style', 'font-synthesis', 'font-variant', 'font-variant-numeric', 'font-weight', 'gap', 'grid-column', 'grid-row', 'grid-template-columns', 'grid-template-rows', 'hanging-punctuation', 'height', 'hyphens', 'image-rendering', 'initial-letter', 'inline-size', 'inset', 'inset-block', 'inset-block-end', 'inset-block-start', 'inset-inline', 'inset-inline-end', 'inset-inline-start', 'isolation', 'justify-content', 'left', 'letter-spacing', 'line-clamp', 'line-height', 'list-style', 'margin', 'mask-image', 'mask-position', 'mask-repeat', 'mask-size', 'max-height', 'max-width', 'min-height', 'min-width', 'mix-blend-mode', 'object-fit', 'object-position', 'offset-anchor', 'offset-distance', 'offset-path', 'offset-rotate', 'opacity', 'order', 'orphans', 'outline', 'outline-offset', 'overflow', 'overflow-anchor', 'overflow-wrap', 'overscroll-behavior', 'padding', 'page-break', 'paint-order', 'perspective', 'perspective-origin', 'place-items', 'pointer-events', 'position', 'quotes', 'resize', 'right', 'row-gap', 'scroll-behavior', 'scroll-margin', 'scroll-padding', 'scroll-snap-align', 'scroll-snap-stop', 'scroll-snap-type', 'scrollbar', 'scrollbar-color', 'scrollbar-gutter', 'scrollbar-width', 'shape-image-threshold', 'shape-margin', 'shape-outside', 'speak', 'stroke', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-width', 'tab-size', 'table-layout', 'text-align', 'text-align-last', 'text-decoration', 'text-decoration-color', 'text-decoration-line', 'text-decoration-skip', 'text-decoration-skip-ink', 'text-decoration-style', 'text-decoration-thickness', 'text-indent', 'text-justify', 'text-overflow', 'text-rendering', 'text-shadow', 'text-stroke', 'text-transform', 'text-underline-offset', 'text-underline-position', 'top', 'touch-action', 'transform', 'transform-origin', 'transform-style', 'transition', 'transition-delay', 'transition-duration', 'transition-property', 'transition-timing-function', 'unicode-bidi', 'unicode-range', 'user-select', 'vertical-align', 'visibility', 'white-space', 'widows', 'width', 'will-change', 'word-break', 'word-spacing', 'writing-mode', 'z-index', 'zoom']
-def is_valid_css_prop(a_css_prop):
-    '''Check if a given property EXISTS in qt Spec'''
-    return True
-    global _valid_css_fields
-    norm_ = a_css_prop.replace('_', '-')
-    return norm_ in _valid_css_fields
+def style_entry(**kwargs):
+    generated_style = ''
+    for Qt_property, value in kwargs.items():
+        generated_style += "\t{} : {};\n".format(Qt_property.replace('_','-'), value)
+
+        # generated_style += "}"
+    return generated_style
+
+def style_generate(qt_element_type, entries):
+    generated_style = qt_element_type + " {\n"
+    generated_style += entries
+    generated_style += "}"
+    return generated_style
+
+
+class Style(object):
+    def __init__(self, id, **kwargs):
+        self.content = id + " {\n}"
+        self.add(**kwargs)
+
+    def add(self, **kwargs):
+        self.content = self.content[:-1]
+        for key, value in kwargs.items():
+            if isinstance(value, (tuple, list)):
+                value, isnot = value
+            else:
+                isnot = None
+            if value is not None and value != isnot:
+                self.content += "\t{} : {};\n".format(key.replace("_", "-"), value)
+        self.content += "}"
+
+    def append(self, value):
+        self.content = self.content[:-1] + value + "\n}"
+
+    def __repr__(self):
+        return self.content
 
 
 def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
-    """
-    :param form: a window class
-    :type form: (Window)
-    :param containing_frame: ???
-    :type containing_frame: ???
-    :param toplevel_form: ???
-    :type toplevel_form: (Window)
-    """
-    # align2qt_align
-    align2qt_align = {'c': Qt.AlignCenter, 'l': Qt.AlignLeft, 'r': Qt.AlignRight}
 
     border_depth = toplevel_win.BorderDepth if toplevel_win.BorderDepth is not None else DEFAULT_BORDER_WIDTH
     # --------------------------------------------------------------------------- #
@@ -6009,9 +4815,12 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
         # *********** -------  Loop through ELEMENTS  ------- ***********#
         # *********** Make TK Row                             ***********#
         qt_row_layout = QHBoxLayout()
-        elem_align = container_elem.ElementJustification[0]
-        if elem_align in align2qt_align:
-            qt_row_layout.setAlignment(align2qt_align[elem_align])
+        if container_elem.ElementJustification.startswith('c'):
+            qt_row_layout.setAlignment(Qt.AlignCenter)
+        elif container_elem.ElementJustification.startswith('r'):
+            qt_row_layout.setAlignment(Qt.AlignRight)
+        elif container_elem.ElementJustification.startswith('l'):
+            qt_row_layout.setAlignment(Qt.AlignLeft)
         for col_num, element in enumerate(flex_row):
             element.ParentForm = toplevel_win  # save the button's parent form object
             element.row_frame = qt_row_layout
@@ -6042,12 +4851,11 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 auto_size_text = False  # if user has specified a size then it shouldn't autosize
             full_element_pad = [0,0,0,0]       # Top, Right, Bottom, Left
             elementpad = element.Pad if element.Pad is not None else toplevel_win.ElementPadding
-            if type(elementpad[0]) is not tuple:   # left and right
+            if type(elementpad[0]) != tuple:   # left and right
                 full_element_pad[1] = full_element_pad[3] = elementpad[0]
             else:
                 full_element_pad[3], full_element_pad[1] = elementpad[0]
-
-            if type(elementpad[1]) is not tuple:   # top and bottom
+            if type(elementpad[1]) != tuple:   # top and bottom
                 full_element_pad[0] = full_element_pad[2] = elementpad[1]
             else:
                 full_element_pad[0], full_element_pad[2] = elementpad[1]
@@ -6066,16 +4874,18 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 column_widget = QGroupBox()
                 element.Widget = element.QT_QGroupBox = column_widget
                 # column_widget.setFrameShape(QtWidgets.QFrame.NoFrame)
-
-                # === style ===
-                style = QtStyle('QGroupBox')
-                style['font'] = create_style_from_font(font)
+                style = create_style_from_font(font)
                 if element.BackgroundColor is not None:
-                    style['background_color'] = element.BackgroundColor
-                style['border'] = '0px solid gray' # FIXv2
-                column_widget.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                    style = style_entry(background_color=element.BackgroundColor)
+                    # style += 'background-color: %s;' % element.BackgroundColor
+                style += style_entry(border='0px solid gray')
+                # style += style_entry(margin='{}px {}px {}px {}px'.format(*full_element_pad))
+                # style += style_entry(margin='0px 0px 0px 0px')
+                # style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+
+                # style += 'border: 0px solid gray; '
+                style = style_generate('QGroupBox', style)
+                column_widget.setStyleSheet(style)
 
                 column_layout = QFormLayout()
                 element.vbox_layout = column_vbox = QVBoxLayout()
@@ -6098,7 +4908,10 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if not element.Visible:
                     column_widget.setVisible(False)
 
-                qt_row_layout.addWidget(scroll if scroll else column_widget, alignment=Qt.AlignVCenter)
+                if scroll:
+                    qt_row_layout.addWidget(scroll)
+                else:
+                    qt_row_layout.addWidget(column_widget)
             # -------------------------  TEXT placement element  ------------------------- #
             elif element_type == ELEM_TYPE_TEXT:
                 element.Widget = element.QT_Label = qlabel = QLabel(element.DisplayText, toplevel_win.QTWindow)
@@ -6108,25 +4921,24 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     justification = toplevel_win.TextJustification
                 else:
                     justification = DEFAULT_TEXT_JUSTIFICATION
-
-                if justification[0] in align2qt_align:
-                    element.QT_Label.setAlignment(align2qt_align[justification[0]])
+                if justification[0] == 'c':
+                    element.QT_Label.setAlignment(Qt.AlignCenter)
+                elif justification[0] == 'r':
+                    element.QT_Label.setAlignment(Qt.AlignRight)
                 if not auto_size_text:
                     if element_size[0] is not None:
                         element.QT_Label.setFixedWidth(element_size[0])
                     if element_size[1] is not None:
                         element.QT_Label.setFixedHeight(element_size[1])
                 # element.QT_Label.setWordWrap(True)
+                style = Style('QLabel')
+                style.append(create_style_from_font(font))
+                style.add(color=(element.TextColor, COLOR_SYSTEM_DEFAULT))
+                style.add(background_color=(element.BackgroundColor, COLOR_SYSTEM_DEFAULT))
+                element.QT_Label.setStyleSheet(style.content)
 
-                # === style ===
-                style = QtStyle('QLabel')
-                style['font'] = create_style_from_font(font)
-                style['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                style['margin'] = full_element_pad
-                element.QT_Label.setStyleSheet(str(style))
-                element.qt_styles = (style,)
-                # === style === end
+                if element.ClickSubmits:
+                    element.QT_Label.mousePressEvent = element._QtCallbackTextClicked
 
                 if element.Relief is not None:
                     if element.Relief in (RELIEF_RIDGE, RELIEF_RAISED):
@@ -6139,30 +4951,26 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if element.Margins is not None:
                     m = element.Margins
                     qlabel.setContentsMargins(m[0], m[2], m[1], m[3])  # L T B R
-                if element.Tooltip:         element.QT_Label.setToolTip(element.Tooltip)
-                if element.ClickSubmits:    element.QT_Label.mousePressEvent = element._QtCallbackTextClicked
+                if element.Tooltip:
+                    element.QT_Label.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_Label.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Label, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Label)
             # -------------------------  BUTTON placement element  ------------------------- #
             elif element_type == ELEM_TYPE_BUTTON:
                 element = element            #type: Button
                 btext = element.ButtonText
                 btype = element.BType
                 element.Widget = element.QT_QPushButton = QPushButton(btext)
-                # === style ===
-                style = QtStyle('QPushButton')
-                style['font'] = create_style_from_font(font)
-                style['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                style['background_color'] = (element.BackgroundColor)
+                style = Style('QPushButton')
+                style.append(create_style_from_font(font))
+                style.add(color=(element.TextColor, COLOR_SYSTEM_DEFAULT))
+                style.add(background_color=(element.BackgroundColor))
                 if element.BorderWidth == 0:
-                    style['border'] = 'none'
-                style['margin'] = full_element_pad
-                # style['border'] = '{}px solid gray '.format(border_depth)
-                element.QT_QPushButton.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
+                    style.add(border='none')
+                style.add(margin='{}px {}px {}px {}px'.format(*full_element_pad))
+                # style.add(border='{}px solid gray '.format(border_depth))
+                element.QT_QPushButton.setStyleSheet(style.content)
                 # element.QT_QPushButton.setFlat(False)
                 if (element.AutoSizeButton is False or toplevel_win.AutoSizeButtons is False or element.Size[0] is not None) and element.ImageData is None:
                     if element_size[0] is not None:
@@ -6170,12 +4978,27 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     if element_size[1] is not None:
                         element.QT_QPushButton.setFixedHeight(element_size[1])
 
+                #
+                # elif element.Data is not None:
+                #     qlabel.setText('')
+                #     ba = QtCore.QByteArray.fromRawData(element.Data)
+                #     pixmap = QtGui.QPixmap()
+                #     pixmap.loadFromData(ba)
+                #     qlabel.setPixmap(pixmap)
+                # elif element.DataBase64:
+                #     qlabel.setText('')
+                #     ba = QtCore.QByteArray.fromBase64(element.DataBase64)
+                #     pixmap = QtGui.QPixmap()
+                #     pixmap.loadFromData(ba)
+                #     qlabel.setPixmap(pixmap)
+
                 if element.ImageFilename is not None:
                     element.QT_QPushButton.setIcon(QtGui.QPixmap(element.ImageFilename))
                     element.QT_QPushButton.setIconSize(QtGui.QPixmap(element.ImageFilename).rect().size())
                 if element.ImageData:
                     ba = QtCore.QByteArray.fromBase64(element.ImageData)
-                    pixmap = QtGui.QPixmap(); pixmap.loadFromData(ba)
+                    pixmap = QtGui.QPixmap()
+                    pixmap.loadFromData(ba)
                     element.QT_QPushButton.setIcon(pixmap)
                     element.QT_QPushButton.setIconSize(pixmap.rect().size())
 
@@ -6188,10 +5011,9 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if not element.Visible:
                     element.QT_QPushButton.setVisible(False)
 
-                qt_row_layout.addWidget(element.QT_QPushButton, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QPushButton)
             # -------------------------  INPUT placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_TEXT:
-                element = element       # type: InputText
                 default_text = element.DefaultText
                 element.Widget = element.QT_QLineEdit = qlineedit = QLineEdit()
 
@@ -6199,30 +5021,19 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 qlineedit.dragEnterEvent = element._dragEnterEvent
                 qlineedit.dropEvent = element._dropEvent
 
-                if element.Justification[0] in align2qt_align:
-                    element.QT_QLineEdit.setAlignment(align2qt_align[element.Justification[0]])
+                if element.Justification[0] == 'c':
+                    element.QT_QLineEdit.setAlignment(Qt.AlignCenter)
+                elif element.Justification[0] == 'r':
+                    element.QT_QLineEdit.setAlignment(Qt.AlignRight)
                 element.QT_QLineEdit.setText(str(default_text))
 
-                # === style ===
-                style = QtStyle('QLineEdit')
-                style['font'] = create_style_from_font(font)
-                if element.Disabled or element.ReadOnly:
-                    if element.disabled_readonly_background_color:
-                        style['background_color'] = (element.disabled_readonly_background_color, COLOR_SYSTEM_DEFAULT)
-                    else:
-                        style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                    if element.disabled_readonly_text_color:
-                        style['color'] = (element.disabled_readonly_text_color, COLOR_SYSTEM_DEFAULT)
-                    else:
-                        style['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                else:
-                    style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                    style['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray '.format(border_depth)
-                element.QT_QLineEdit.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style = Style('QLineEdit')
+                style.append(create_style_from_font(font))
+                style.add(color=(element.TextColor, COLOR_SYSTEM_DEFAULT))
+                style.add(background_color=(element.BackgroundColor, COLOR_SYSTEM_DEFAULT))
+                style.add(margin='{}px {}px {}px {}px'.format(*full_element_pad))
+                style.add(border='{}px solid gray '.format(border_depth))
+                element.QT_QLineEdit.setStyleSheet(style.content)
 
                 if element.AutoSizeText is False or toplevel_win.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6236,9 +5047,6 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
 
                 if element.Disabled:
                     element.QT_QLineEdit.setDisabled(True)
-
-                if element.ReadOnly:
-                    element.QT_QLineEdit.setReadOnly(True)
 
                 if element.ChangeSubmits:
                     element.QT_QLineEdit.textChanged.connect(element._QtCallbackFocusInEvent)
@@ -6254,39 +5062,38 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_QLineEdit.installEventFilter(element.InputTextWidget)
                 if not element.Visible:
                     element.QT_QLineEdit.setVisible(False)
-                qt_row_layout.addWidget(element.QT_QLineEdit, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QLineEdit)
             # -------------------------  COMBO placement BOX (Drop Down) element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_COMBO:
-                element = element   # type: Combo
                 element.Widget = element.QT_ComboBox = QComboBox()
+                max_line_len = max([len(str(l)) for l in element.Values])
+                if auto_size_text is False:
+                    width = element_size[0]
+                else:
+                    width = max_line_len
 
-                items_as_strings = [str(v) for v in element.Values]
-                # element.QT_ComboBox.addItems(element.Values)
-                element.QT_ComboBox.addItems(items_as_strings)
+                style = Style('QComboBox')
+                style.append(create_style_from_font(font))
+                style.add(color=(element.TextColor, COLOR_SYSTEM_DEFAULT))
+                style.add(background_color=(element.BackgroundColor, COLOR_SYSTEM_DEFAULT))
+                style.add(border='{}px solid gray '.format(border_depth))
+                style2 = Style('QListView')
+                style2.add(color=(element.TextColor, COLOR_SYSTEM_DEFAULT))
+                style2.add(background_color=(element.BackgroundColor, COLOR_SYSTEM_DEFAULT))
 
-                # === style ===
-                style = QtStyle('QComboBox')
-                style['font'] = create_style_from_font(font)
-                style['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                style['border'] = '{}px solid gray '.format(border_depth)
-                style['margin'] = full_element_pad
+                element.QT_ComboBox.setStyleSheet(style.content+style2.content)
 
-                style2 = QtStyle('QListView')
-                style2['color'] = (element.TextColor, COLOR_SYSTEM_DEFAULT)
-                style2['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-
-                element.QT_ComboBox.setStyleSheet(str(style)+str(style2))
-                element.qt_styles = (style, style2)
-                # === style === end
-
-                if element_size[0] is not None:
-                    element.QT_ComboBox.setFixedWidth(element_size[0])
-                if element_size[1] is not None:
-                    element.QT_ComboBox.setFixedHeight(element_size[1])
+                if not auto_size_text:
+                    if element_size[0] is not None:
+                        element.QT_ComboBox.setFixedWidth(element_size[0])
+                    if element_size[1] is not None:
+                        element.QT_ComboBox.setFixedHeight(element_size[1])
 
                 if element.Disabled:
                     element.QT_ComboBox.setDisabled(True)
+                items_as_strings = [str(v) for v in element.Values]
+                # element.QT_ComboBox.addItems(element.Values)
+                element.QT_ComboBox.addItems(items_as_strings)
 
                 element.QT_ComboBox.setMaxVisibleItems(element.VisibleItems)
                 if element.DefaultValue is not None:
@@ -6305,28 +5112,33 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_ComboBox.setAutoCompletion(True)
                 if not element.Visible:
                     element.QT_ComboBox.setVisible(False)
-                qt_row_layout.addWidget(element.QT_ComboBox, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_ComboBox)
             # -------------------------  OPTION MENU (Like ComboBox but different) element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_OPTION_MENU:
-                pass
+                max_line_len = max([len(str(l)) for l in element.Values])
             # -------------------------  LISTBOX placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_LISTBOX:
                 element = element       # type: Listbox
+                max_line_len = max([len(str(l)) for l in element.Values]) if len(element.Values) != 0 else 0
                 element.Widget = element.QT_ListWidget = QListWidget()
+                style = element.QT_ListWidget.styleSheet()
+                # style += """QScrollBar:vertical {
+                #             border: none;
+                #             background:lightgray;
+                #             width:12px;
+                #             margin: 0px 0px 0px 0px;
+                #         } """
+                style = 'QListWidget {'
+                style += create_style_from_font(font)
 
-                # === style ===
-                style = QtStyle('QListWidget')
-                style['font'] = create_style_from_font(font)
                 if element.TextColor is not None and element.TextColor != COLOR_SYSTEM_DEFAULT:
-                    style['color'] = element.TextColor
+                    style += 'color: %s;' % element.TextColor
                 if element.BackgroundColor is not None and element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    style['background-color'] = element.BackgroundColor # example for mike here
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray; '.format(border_depth)
-                element.QT_ListWidget.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                element.QT_ListWidget.setStyleSheet(style)
                 if not auto_size_text:
                     if element_size[0] is not None:
                         element.QT_ListWidget.setFixedWidth(element_size[0])
@@ -6341,11 +5153,15 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_ListWidget.setSelectionMode(QAbstractItemView.ContiguousSelection)
                 elif element.SelectMode == SELECT_MODE_SINGLE:
                     element.QT_ListWidget.setSelectionMode(QAbstractItemView.SingleSelection)
-                if element.Disabled: element.QT_ListWidget.setDisabled(True)
-                if element.ChangeSubmits: element.QT_ListWidget.currentRowChanged.connect(element._QtCurrentRowChanged)
 
+                if element.Disabled:
+                    element.QT_ListWidget.setDisabled(True)
+
+                if element.ChangeSubmits:
+                    element.QT_ListWidget.currentRowChanged.connect(element._QtCurrentRowChanged)
                 # add all Values to the ListWidget
-                element.QT_ListWidget.addItems([str(v) for v in element.Values])
+                items = [str(v) for v in element.Values]
+                element.QT_ListWidget.addItems(items)
                 # select the default items
                 for index, value in enumerate(element.Values):
                     item = element.QT_ListWidget.item(index)
@@ -6356,7 +5172,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_ListWidget.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_ListWidget.setVisible(False)
-                qt_row_layout.addWidget(element.QT_ListWidget, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_ListWidget)
             # -------------------------  INPUT MULTILINE placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_MULTILINE:
                 element = element           # type: Multiline
@@ -6368,17 +5184,17 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_TextEdit.dragEnterEvent = element._dragEnterEvent
                 element.QT_TextEdit.dropEvent = element._dropEvent
 
-                # === style ===
-                style = QtStyle('QTextEdit')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray; '.format(border_depth)
-                element.QT_TextEdit.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style = 'QTextEdit {'
+                style += create_style_from_font(font)
 
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                element.QT_TextEdit.setStyleSheet(style)
 
                 if element.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6406,25 +5222,24 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 # qt_row_layout.setContentsMargins(*full_element_pad)
                 if not element.Visible:
                     element.QT_TextEdit.setVisible(False)
-                qt_row_layout.addWidget(element.QT_TextEdit, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_TextEdit)
             # ------------------------- OUTPUT MULTILINE placement element  ------------------------- #
             elif element_type == ELEM_TYPE_MULTILINE_OUTPUT:
                 element = element           # type: MultilineOutput
                 default_text = element.DefaultText
+                width, height = element_size
                 element.Widget = element.QT_TextBrowser = QTextBrowser()
                 element.QT_TextBrowser.setDisabled(False)
-
-                # === style ===
-                style = QtStyle('QTextBrowser')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                element.QT_TextBrowser.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
+                style = 'QTextBrowser {'
+                style += create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                element.QT_TextBrowser.setStyleSheet(style)
 
                 if element.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6439,7 +5254,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 # qt_row_layout.setContentsMargins(*full_element_pad)
                 if not element.Visible:
                     element.QT_TextBrowser.setVisible(False)
-                qt_row_layout.addWidget(element.QT_TextBrowser, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_TextBrowser)
             # -------------------------  INPUT CHECKBOX placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_CHECKBOX:
                 element = element           # type: Checkbox
@@ -6447,17 +5262,14 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_Checkbox.setChecked(element.InitialState)
                 if element.Disabled:
                     element.QT_Checkbox.setDisabled(True)
+                style = create_style_from_font(font)
 
-                # === style ===
-                style = QtStyle('QCheckBox')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                element.QT_Checkbox.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                element.QT_Checkbox.setStyleSheet(style)
 
                 if element.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6471,7 +5283,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_Checkbox.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_Checkbox.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Checkbox, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Checkbox)
               # -------------------------  PROGRESSBAR placement element  ------------------------- #
             elif element_type == ELEM_TYPE_PROGRESS_BAR:
                 element.Widget = element.QT_QProgressBar = QProgressBar()
@@ -6486,27 +5298,18 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_QProgressBar.setValue(element.StartValue)
                 if element.Orientation.lower().startswith('v'):
                     element.QT_QProgressBar.setOrientation(QtCore.Qt.Vertical)
-
-                # === style ===
-                style = QtStyle('QProgressBar')
-                style_chunk = QtStyle('QProgressBar::chunk')
-                style['margin'] = full_element_pad
+                style = ''
                 # style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
                 # style += 'border: {}px solid gray; '.format(border_depth)
                 if element.BarColor != (None, None):
                     if element.BarColor[0] is not None:
-                        style_chunk['background-color'] = element.BarColor[0]
+                        style += "QProgressBar::chunk { background-color: %s; }"%element.BarColor[0]
+                    if element.BarColor[1] is not None:
+                        style += "QProgressBar { border: %spx solid grey; border-radius: 0px; background-color: %s; }"%(border_depth, element.BarColor[1])
+                    else:
+                        style += "QProgressBar { border: %spx solid grey; border-radius: 0px; background-color: %s}"%(border_depth, DEFAULT_PROGRESS_BAR_COLOR[1])
 
-                    style['border'] = '%spx solid grey' % border_depth
-                    style['border-radius'] = '0px'
-                    style['background-color'] = str(element.BarColor[1] \
-                                                if element.BarColor[1] is not None \
-                                                else DEFAULT_PROGRESS_BAR_COLOR[1])
-
-
-                element.QT_QProgressBar.setStyleSheet(style.build_css_string()+style_chunk.build_css_string())
-                element.qt_styles = (style, style_chunk)
-                # === style === end
+                element.QT_QProgressBar.setStyleSheet(style)
 
                 element.QT_QProgressBar.setTextVisible(False)
                 if element.Tooltip:
@@ -6514,7 +5317,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if not element.Visible:
                     element.QT_QProgressBar.setVisible(False)
 
-                qt_row_layout.addWidget(element.QT_QProgressBar, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QProgressBar)
             # -------------------------  INPUT RADIO placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_RADIO:
                 element = element           # type: Radio
@@ -6523,17 +5326,15 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_Radio_Button = qradio
                 if element.Disabled:
                     element.QT_Radio_Button.setDisabled(True)
-                if default_value:    qradio.setChecked(True)
-
-                # === style ===
-                style = QtStyle('QRadioButton')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                element.QT_Radio_Button.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                if default_value:
+                    qradio.setChecked(True)
+                style = create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                element.QT_Radio_Button.setStyleSheet(style)
 
                 if element.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6558,7 +5359,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_Radio_Button.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_Radio_Button.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Radio_Button, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Radio_Button)
                 # -------------------------  INPUT SPIN placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_SPIN:
                 # element.QT_Spinner = QSpinBox()
@@ -6569,17 +5370,16 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                         element.QT_Spinner.setValue(element.QT_Spinner.valueFromText(element.DefaultValue))
                     except:
                         pass
-                # === style ===
-                style = QtStyle('QSpinBox')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                element.QT_Spinner.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
+                style = 'QSpinBox {'
+                style += create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                element.QT_Spinner.setStyleSheet(style)
                 # element.QT_Spinner.setRange(element.Values[0], element.Values[1])
                 if not auto_size_text:
                     if element_size[0] is not None:
@@ -6595,24 +5395,27 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_Spinner.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_Spinner.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Spinner, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Spinner)
             # -------------------------  OUTPUT placement element  ------------------------- #
             elif element_type == ELEM_TYPE_OUTPUT:
-                element = element       # type: Output
                 element.Widget = element.QT_TextBrowser = QTextBrowser()
                 element.QT_TextBrowser.setDisabled(False)
-
-                # === style ===
-                style = QtStyle('QTextBrowser')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                # style += "QScrollBar:vertical {border: none; background:lightgray; width:12px; margin: 0px 0px 0px 0px; } "
-                element.QT_TextBrowser.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style = 'QTextBrowser {'
+                style += create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                # style += """QScrollBar:vertical {
+                #             border: none;
+                #             background:lightgray;
+                #             width:12px;
+                #             margin: 0px 0px 0px 0px;
+                #         } """
+                style += '}'
+                element.QT_TextBrowser.setStyleSheet(style)
 
                 if element.AutoSizeText is False or element.Size[0] is not None:
                     if element_size[0] is not None:
@@ -6626,7 +5429,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_TextBrowser.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_TextBrowser.setVisible(False)
-                qt_row_layout.addWidget(element.QT_TextBrowser, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_TextBrowser)
             # -------------------------  IMAGE placement element  ------------------------- #
             elif element_type == ELEM_TYPE_IMAGE:
                 element = element           # type: Image
@@ -6650,19 +5453,17 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     pixmap.loadFromData(ba)
                     qlabel.setPixmap(pixmap)
 
-                # === style ===
-                style = QtStyle('QLabel')
-                style['margin'] = full_element_pad
-                element.QT_QLabel.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style = ''
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                element.QT_QLabel.setStyleSheet(style)
+                if element.Tooltip:
+                    element.QT_QLabel.setToolTip(element.Tooltip)
 
-                if element.Tooltip:         element.QT_QLabel.setToolTip(element.Tooltip)
                 if element.ClickSubmits:
                     element.QT_QLabel.mousePressEvent = element.QtCallbackImageClicked
                 if not element.Visible:
                     element.QT_QLabel.setVisible(False)
-                qt_row_layout.addWidget(element.QT_QLabel, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QLabel)
             # -------------------------  Canvas placement element  ------------------------- #
             elif element_type == ELEM_TYPE_CANVAS:
                 width, height = element_size
@@ -6679,15 +5480,12 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element.QT_QGraphicsScene.setSceneRect(0,0,element.CanvasSize[0],element.CanvasSize[1])
                 element.QT_QGraphicsView.setScene(element.QT_QGraphicsScene)
 
-                # === style ===
-                style = QtStyle('QGraphicsView')
-                style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray '.format(border_depth)
+                style = Style('QGraphicsView')
+                style.add(background_color=(element.BackgroundColor, COLOR_SYSTEM_DEFAULT))
+                style.add(margin='{}px {}px {}px {}px'.format(*full_element_pad))
+                style.add(border='{}px solid gray '.format(border_depth))
                 # print(f'style content = {style.content}')
-                element.QT_QGraphicsView.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                element.QT_QGraphicsView.setStyleSheet(style.content)
 
                 qgraphicsview.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
                 qgraphicsview.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -6696,7 +5494,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_QGraphicsView.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_QGraphicsView.setVisible(False)
-                qt_row_layout.addWidget(element.QT_QGraphicsView, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QGraphicsView)
             # -------------------------  MENUBAR placement element  ------------------------- #
             elif element_type == ELEM_TYPE_MENUBAR:
                 element = element           # type: Menu
@@ -6713,26 +5511,10 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                         baritem.setTitle(menu_entry[0])
                     element.QT_QMenuBar.addAction(baritem.menuAction())
                     AddMenuItem(baritem, menu_entry[1], element)
-                    # === style ===
-                    menu_style = QtStyle('QMenu')
-                    menu_style['font'] = create_style_from_font(font)
-                    if element.MenuItemTextColor is not None and element.MenuItemTextColor != COLOR_SYSTEM_DEFAULT:
-                        menu_style['color'] = element.MenuItemTextColor
-                    if element.MenuItemBackgroundColor is not None and element.MenuItemBackgroundColor != COLOR_SYSTEM_DEFAULT:
-                        menu_style['background-color'] = element.MenuItemBackgroundColor
-                    # style['margin'] = full_element_pad
-                    baritem.setStyleSheet(menu_style.build_css_string())
-                    # === style === end
-
-
                 if element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    # === style ===
-                    style = QtStyle('QMenuBar')
-                    style['background_color'] = (element.BackgroundColor, COLOR_SYSTEM_DEFAULT)
-                    element.QT_QMenuBar.setStyleSheet(style.build_css_string())
-                    element.qt_styles = (style,)
-                    # === style === end
-
+                    style = Style('QMenuBar')
+                    style.add(background_color=(element.BackgroundColor))
+                    element.QT_QMenuBar.setStyleSheet(style.content)
                 if not element.Visible:
                     element.QT_QMenuBar.setVisible(False)
                 toplevel_win.QT_QMainWindow.setMenuBar(element.QT_QMenuBar)
@@ -6740,22 +5522,16 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
             elif element_type == ELEM_TYPE_BUTTONMENU:
                 btext = element.ButtonText
                 element.Widget = element.QT_QPushButton = QPushButton(btext)
-
-                # === style ===
-                style = QtStyle('QPushButton')
-                style['font'] = create_style_from_font(font)
+                style = create_style_from_font(font)
                 if element.TextColor is not None and element.TextColor != COLOR_SYSTEM_DEFAULT:
-                    style['color'] = element.TextColor
+                    style += 'color: %s;' % element.TextColor
                 if element.BackgroundColor is not None and element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    style['background-color'] = element.BackgroundColor
+                    style += 'background-color: %s;' % element.BackgroundColor
                 if element.BorderWidth == 0:
-                    style['border'] = 'none'
-                style['margin'] = full_element_pad
-                element.QT_QPushButton.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
-
-
+                    style += 'border: none;'
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                # style += 'border: {}px solid gray; '.format(border_depth)
+                element.QT_QPushButton.setStyleSheet(style)
                 if (element.AutoSizeButton is False or toplevel_win.AutoSizeButtons is False or element.Size[0] is not None) and element.ImageData is None:
                     if element_size[0] is not None:
                         element.QT_QPushButton.setFixedWidth(element_size[0])
@@ -6782,128 +5558,46 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 qmenu.setTitle(menu_def[0])
                 AddMenuItem(qmenu, menu_def[1], element)
 
-                # === style ===
-                menu_style = QtStyle('QMenu')
-                menu_style['font'] = create_style_from_font(font)
-                if element.TextColor is not None and element.TextColor != COLOR_SYSTEM_DEFAULT:
-                    menu_style['color'] = element.TextColor
-                if element.BackgroundColor is not None and element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    menu_style['background-color'] = element.BackgroundColor
-                # style['margin'] = full_element_pad
-                qmenu.setStyleSheet(menu_style.build_css_string())
-                # element.qt_styles = (style,)
-                # === style === end
-
                 element.QT_QPushButton.setMenu(qmenu)
                 if element.Tooltip:
                     element.QT_QPushButton.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_QPushButton.setVisible(False)
-                qt_row_layout.addWidget(element.QT_QPushButton, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QPushButton)
             # -------------------------  Frame placement element  ------------------------- #
             elif element_type == ELEM_TYPE_FRAME:
-                element = element       # type: Frame
                 element.Widget = column_widget = QGroupBox()
                 element.QT_QGroupBox = column_widget
-
-                # === style ===
-                style = QtStyle('QGroupBox')
-                # style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                # style['origin'] = 'margin'
-                style['font'] = create_style_from_font(font)
-                if element.FrameColor is not None:
-                    style['border'] = '{}px solid {} '.format(border_depth, element.FrameColor)
-                else:
-                    style['border'] = '{}px solid {} '.format(border_depth, 'gainsboro')    # default to a light gray
-
-
-                # style['padding'] = (10,10,10,10)
-                # style['margin'] = full_element_pad
-                # style['padding'] = (0,15,15,15)
-                # style['padding'] = (10,10,10,10)
-                style['margin-top'] = '10px'
-                # style['top'] = '60px'
-                # style['margin'] = (0,0,0,0)
-                style['origin'] = 'margin'
-
-                style_title = QtStyle('QGroupBox::title')
-                # style_title['padding'] =  (0,5,0,5)
-                style_title['margin'] = (0,0,0,0)
-
-                style_title['left'] =  '15px'
-                # style_title['margin-top'] =  '-20px'
-                # style_title['top'] =  '20px'
-                style_title['subcontrol-origin'] = 'margin'
-                # style_title['subcontrol-origin'] = 'border'
-
-                # style_title['subcontrol-origin'] = 'padding'
-                style_title['subcontrol-position'] = 'top left'
-
-                column_widget.setStyleSheet(str(style)+str(style_title))
-                # column_widget.setStyleSheet(str(style))
-                # print(element.Widget.styleSheet())
-                element.qt_styles = (style, )
-                # === style === end
+                style = create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                # style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                # style += 'border: {}px solid gray; '.format(border_depth)
+                column_widget.setStyleSheet(style)
 
                 column_widget.setTitle(element.Title)
-
-                column_layout, column_vbox = QFormLayout(), QVBoxLayout()
+                column_layout = QFormLayout()
+                column_vbox = QVBoxLayout()
                 PackFormIntoFrame(element, column_layout, toplevel_win)
                 column_vbox.addLayout(column_layout)
                 column_widget.setLayout(column_vbox)
-
-                # Add a padding groupbox
-                pad_layout, pad_vbox = QFormLayout(), QVBoxLayout()
-                pad_groupbox = QGroupBox()
-
-                pad_vbox.addLayout(pad_layout)
-                pad_groupbox.setLayout(pad_vbox)
-                pad_vbox.addWidget(column_widget)
-
-                pad_layout.setSpacing(0)
-                pad_vbox.setSpacing(0)
-                # === style ===
-                style = QtStyle('QGroupBox')
-                # style['font'] = create_style_from_font(font)
-                style['border'] = '0px'
-                style['margin'] = (0,0,0,0)
-                # style['margin'] = full_element_pad
-
-                style['padding'] = (0,0,0,0)
-                style['margin-top'] = '0px'
-                style['origin'] = 'content'
-                style_title = QtStyle('QGroupBox::title')
-                style_title['subcontrol-origin'] = 'content'
-
-                style_title['padding'] =  (0,0,0,0)
-                style_title['margin'] = (0,0,0,0)
-                pad_groupbox.setStyleSheet(str(style)+str(style_title))
-                # === style === end
-
-
                 if element.Tooltip:
                     column_widget.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_QGroupBox.setVisible(False)
-
-                qt_row_layout.addWidget(pad_groupbox)
-                # qt_row_layout.addWidget(column_widget)
+                qt_row_layout.addWidget(column_widget)
             # -------------------------  Tab placement element  ------------------------- #
             elif element_type == ELEM_TYPE_TAB:
                 element.Widget = tab_widget = QWidget()
                 element.QT_QWidget = tab_widget
                 # tab_widget.setFrameShape(QtWidgets.QFrame.NoFrame)
-
-                # === style ===
-                style = QtStyle('QTabWidget')
-                style['font'] = create_style_from_font(font)
+                style = create_style_from_font(font)
                 if element.BackgroundColor is not None:
                     # style += 'background-color: %s;' % element.BackgroundColor
                     # style += 'QTabWidget > QWidget > QWidget {background: %s;}'% element.BackgroundColor
-                    style['background-color'] = element.BackgroundColor
-                    style.my_anchor = '::pane'
+                    style += 'QTabWidget::pane {background: %s;}'% element.BackgroundColor
                     # style += 'background-color: %s;' % element.BackgroundColor
                     tab_widget.setAutoFillBackground(True)
                     palette = tab_widget.palette()
@@ -6911,13 +5605,12 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     tab_widget.setPalette(palette)
 
                 # style += 'border: {}px solid gray; '.format(border_depth)
-                style['margin'] = full_element_pad
-                tab_widget.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                # print(f'Tab widget style {style}')
+                tab_widget.setStyleSheet(style)
 
-
-                column_layout, column_vbox = QFormLayout(), QVBoxLayout()
+                column_layout = QFormLayout()
+                column_vbox = QVBoxLayout()
 
                 PackFormIntoFrame(element, column_layout, toplevel_win)
 
@@ -6933,23 +5626,14 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 element = element       # type:TabGroup
                 element.Widget = element.QT_QTabWidget = qtab =QTabWidget()
 
-                # === style ===
-                style = QtStyle('QTabWidget')
-                # print(f'qtab.styleSheet() -> {qtab.styleSheet()}')
-                # style = qtab.styleSheet() # FIXv2
+                style = qtab.styleSheet()
                 if element.SelectedTitleColor not in (None, COLOR_SYSTEM_DEFAULT):
-                    style.my_anchor = '::tab:selected'
-                    style['background'] = element.SelectedTitleColor
+                    style += 'QTabBar::tab:selected {background: %s;}'%element.SelectedTitleColor
                 if element.BackgroundColor not in (None, COLOR_SYSTEM_DEFAULT):
-                    style.my_anchor = '::tab'
-                    style['background'] = element.BackgroundColor
+                    style += 'QTabBar::tab {background: %s;}'% element.BackgroundColor
                 if element.TextColor not in (None, COLOR_SYSTEM_DEFAULT):
-                    style.my_anchor = '::tab'
-                    style['color'] = element.TextColor
-                style['margin'] = full_element_pad
-                qtab.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                    style += 'QTabBar::tab {color: %s;}'%element.TextColor
+                qtab.setStyleSheet(style)
 
                 if element.TabLocation is not None:
                     position_dict = {'left': QtWidgets.QTabWidget.TabPosition.West, 'right': QtWidgets.QTabWidget.TabPosition.East, 'top': QtWidgets.QTabWidget.TabPosition.North, 'bottom': QtWidgets.QTabWidget.TabPosition.South, 'lefttop': QtWidgets.QTabWidget.TabPosition.North,
@@ -6961,7 +5645,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                         print('Bad tab position specified {}', element.TabLocation)
                 PackFormIntoFrame(element, element.ParentForm.QFormLayout, toplevel_win)
 
-                qt_row_layout.addWidget(element.QT_QTabWidget, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QTabWidget)
                 if not element.Visible:
                     element.QT_QTabWidget.setVisible(False)
 
@@ -6971,20 +5655,22 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
             elif element_type == ELEM_TYPE_INPUT_SLIDER:
                 element = element           # type: Slider
                 element.Widget = element.QT_Slider = QSlider()
-                element.QT_Slider.setOrientation(Qt.Horizontal if element.Orientation.startswith('h') else Qt.Vertical)
-                if element.Disabled: element.QT_Slider.setDisabled(True)
+                if element.Orientation.startswith('h'):
+                    element.QT_Slider.setOrientation(Qt.Horizontal)
+                else:
+                    element.QT_Slider.setOrientation(Qt.Vertical)
+                if element.Disabled:
+                    element.QT_Slider.setDisabled(True)
+                style = create_style_from_font(font)
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                element.QT_Slider.setStyleSheet(style)
 
-                # === style ===
-                style = QtStyle('QSlider')
-                style['font'] = create_style_from_font(font)
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                element.QT_Slider.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                element.QT_Slider.setMinimum(element.Range[0])
+                element.QT_Slider.setMaximum(element.Range[1])
 
-                element.QT_Slider.setMinimum(element.Range[0]); element.QT_Slider.setMaximum(element.Range[1])
                 position = QSlider.TicksBothSides
                 if element.Relief == RELIEF_TICK_POSITION_NO_TICKS:
                     position = QSlider.NoTicks
@@ -7002,11 +5688,13 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
 
                 if element.TickInterval is not None:
                     element.QT_Slider.setTickInterval(element.TickInterval)
-                if element_size[0] is not None: element.QT_Slider.setFixedWidth(element_size[0])
-                if element_size[1] is not None: element.QT_Slider.setFixedHeight(element_size[1])
                 if element.Resolution is not None:
                     element.QT_Slider.setSingleStep(element.Resolution)
                     element.QT_Slider.setPageStep(element.Resolution)
+                if element_size[0] is not None:
+                    element.QT_Slider.setFixedWidth(element_size[0])
+                if element_size[1] is not None:
+                    element.QT_Slider.setFixedHeight(element_size[1])
                 element.QT_Slider.setValue(element.DefaultValue)
 
                 if element.ChangeSubmits:
@@ -7015,29 +5703,35 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_Slider.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_Slider.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Slider, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Slider)
             # -------------------------  DIAL placement element  ------------------------- #
             elif element_type == ELEM_TYPE_INPUT_DIAL:
                 element.Widget = element.QT_Dial = qdial = QDial()
 
-                # === style ===
-                style = QtStyle('QDial')
-                style['font'] = create_style_from_font(font)
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                element.QT_Dial.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
-                # === style === end
+                style = create_style_from_font(font)
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                element.QT_Dial.setStyleSheet(style)
 
-                if element.Disabled: element.QT_Dial.setDisabled(True)
-                element.QT_Dial.setMinimum(element.Range[0]); element.QT_Dial.setMaximum(element.Range[1])
-                element.QT_Dial.setValue(element.DefaultValue)
+                if element.Disabled:
+                    element.QT_Dial.setDisabled(True)
+
+                element.QT_Dial.setMinimum(element.Range[0])
+                element.QT_Dial.setMaximum(element.Range[1])
+
                 qdial.setNotchesVisible(True)
-                if element.TickInterval is not None:    qdial.setNotchTarget(element.TickInterval)
-                if element.Resolution is not None:      element.QT_Dial.setSingleStep(element.Resolution)
-                if element_size[0] is not None:         element.QT_Dial.setFixedWidth(element_size[0])
-                if element_size[1] is not None:         element.QT_Dial.setFixedHeight(element_size[1])
+                if element.TickInterval is not None:
+                    qdial.setNotchTarget(element.TickInterval)
+                if element.Resolution is not None:
+                    element.QT_Dial.setSingleStep(element.Resolution)
+                if element_size[0] is not None:
+                    element.QT_Dial.setFixedWidth(element_size[0])
+                if element_size[1] is not None:
+                    element.QT_Dial.setFixedHeight(element_size[1])
+                element.QT_Dial.setValue(element.DefaultValue)
+
                 if element.ChangeSubmits:
                     element.QT_Dial.valueChanged.connect(element._QtCallbackValueChanged)
                 if element.Tooltip:
@@ -7045,7 +5739,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 # qt_row_layout.setContentsMargins(*full_element_pad)
                 if not element.Visible:
                     element.QT_Dial.setVisible(False)
-                qt_row_layout.addWidget(element.QT_Dial, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Dial)
             # -------------------------  Stretch placement element  ------------------------- #
             elif element_type == ELEM_TYPE_STRETCH:
                 element = element       # type: Stretch
@@ -7057,27 +5751,29 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if element.NumRows is not None:
                     element.QT_TableWidget.setFixedHeight(element.NumRows*35+25)
                 # element.QT_TableWidget = QTableWidget()
-                # === style ===
+                style = ''
+                if element.HeaderBackgroundColor is not None:
+                    style += 'QHeaderView::section {background-color: %s;}\n' % element.HeaderBackgroundColor
+                if element.HeaderTextColor is not None:
+                    style += 'QHeaderView::section {color: %s;}\n' % element.HeaderTextColor
+                style += 'QTableWidget {'
+                style += create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;\n' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
 
-                style = QtStyle('QTableWidget')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
 
-                # more css: ScrollBar
-                style.append_css_to_end.append(" QScrollBar:vertical {border: none; background:lightgray; width:12px; margin: 0px 0px 0px 0px; } ")
-                # more css: QHeaderView
-                header_style = QtStyle('QHeaderView::section')
-                header_style['font'] = create_style_from_font(element.HeaderFont if element.HeaderFont is not None else font)
-                header_style['background-color'] = element.HeaderBackgroundColor
-                header_style['color'] = element.HeaderTextColor
-
-                element.QT_TableWidget.setStyleSheet(style.build_css_string() + header_style.build_css_string())
-                element.qt_styles = (style, header_style)
-                # === style === end
-
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                style += """QScrollBar:vertical {
+                            border: none;
+                            background:lightgray;
+                            width:12px;
+                            margin: 0px 0px 0px 0px;
+                        } """
+                element.QT_TableWidget.setStyleSheet(style)
                 if element.ChangeSubmits:
                     element.QT_TableWidget.itemSelectionChanged.connect(element._QtCallbackCellActivated)
                 element.QT_TableWidget.setRowCount(len(element.Values))
@@ -7097,7 +5793,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                 if not element.Visible:
                     element.QT_TableWidget.setVisible(False)
 
-                qt_row_layout.addWidget(element.QT_TableWidget, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_TableWidget)
             # -------------------------  Tree placement element  ------------------------- #
             elif element_type == ELEM_TYPE_TREE:
                 element = element   # type: Tree
@@ -7129,10 +5825,11 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     # treeview.column(heading, width=width * CharWidthInPixels(), anchor=anchor)
                 def add_treeview_data(node, widget):
                     # print(f'Inserting {node.key} under parent {node.parent}')
-                    child = widget
                     if node != element.TreeData.root_node:
                         child = QTreeWidgetItem(widget)
                         child.setText(0, str(node.text))
+                    else:
+                        child = widget
                     # if node.key != '':
                     # child.setData(0,0,node.values)
                     if type(node.icon) is bytes:
@@ -7153,25 +5850,22 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
 
                 add_treeview_data(element.TreeData.root_node, element.QT_QTreeWidget)
 
-                # === style ===
-                style = QtStyle('QTreeWidget')
-                style['font'] = create_style_from_font(font)
-                if element.TextColor is not None:       style['color'] = element.TextColor
-                if element.BackgroundColor is not None: style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                style['border'] = '{}px solid gray'.format(border_depth)
-                style.append_css_to_end.append(" QScrollBar:vertical {border: none; background:lightgray; width:12px; margin: 0px 0px 0px 0px; } ")
-
-                header_style = QtStyle('QHeaderView::section')
-                header_style['font'] = create_style_from_font(element.HeaderFont if element.HeaderFont is not None else font)
-                header_style['background-color'] = element.HeaderBackgroundColor
-                header_style['color'] = element.HeaderTextColor
-
-                element.QT_QTreeWidget.setStyleSheet(style.build_css_string() + header_style.build_css_string())
-                element.qt_styles = (style, header_style)
-                # === style === end
-
-
+                style = 'QTreeWidget {'
+                style += create_style_from_font(font)
+                if element.TextColor is not None:
+                    style += 'color: %s;\n' % element.TextColor
+                if element.BackgroundColor is not None:
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                style += 'border: {}px solid gray; '.format(border_depth)
+                style += '}'
+                style += """QScrollBar:vertical {              
+                            border: none;
+                            background:lightgray;
+                            width:12px;
+                            margin: 0px 0px 0px 0px;
+                        } """
+                element.QT_QTreeWidget.setStyleSheet(style)
                 if element.ChangeSubmits:
                     element.QT_QTreeWidget.itemSelectionChanged.connect(element._QtCallbackCellActivated)
 
@@ -7182,7 +5876,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                     element.QT_QTreeWidget.setToolTip(element.Tooltip)
                 if not element.Visible:
                     element.QT_QTreeWidget.setVisible(False)
-                qt_row_layout.addWidget(element.QT_QTreeWidget, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_QTreeWidget)
             # -------------------------  Separator placement element  ------------------------- #
             elif element_type == ELEM_TYPE_SEPARATOR:
                 element = element           # type: HorizontalSeparator
@@ -7192,28 +5886,23 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
                         element.QT_Label.setFixedWidth(element_size[0])
                     if element_size[1] is not None:
                         element.QT_Label.setFixedHeight(element_size[1])
-                style = QtStyle('QLabel')
+                style = ''
                 if element.TextColor is not None and element.TextColor != COLOR_SYSTEM_DEFAULT:
-                    style['color'] = element.TextColor
+                    style += 'color: %s;' % element.TextColor
                 if element.BackgroundColor is not None and element.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-                    style['background-color'] = element.BackgroundColor
-                style['margin'] = full_element_pad
-                element.QT_Label.setStyleSheet(style.build_css_string())
-                element.qt_styles = (style,)
+                    style += 'background-color: %s;' % element.BackgroundColor
+                style += 'margin: {}px {}px {}px {}px;'.format(*full_element_pad)
+                element.QT_Label.setStyleSheet(style)
 
                 qlabel.setFrameStyle(QFrame.VLine if element.Orientation[0] =='v' else QFrame.HLine)
 
-                qt_row_layout.addWidget(element.QT_Label, alignment=Qt.AlignVCenter)
+                qt_row_layout.addWidget(element.QT_Label)
 
-            # Align the Element on center in the row
-            # try:
-            #     element.Widget.setAlignment(element.Widget.alignment() | Qt.AlignVCenter)
-            # except Exception as e:
-            #     print(f'* Alignment error {e}')
+                pass
 
         # ............................DONE WITH ROW pack the row of widgets ..........................#
-        qt_row_layout.setSpacing(0)
-        containing_frame.setSpacing(0)
+        qt_row_layout.setSpacing(toplevel_win.ElementPadding[0])
+        containing_frame.setSpacing(toplevel_win.ElementPadding[1])
         containing_frame.addRow('', qt_row_layout)
 
         # done with row, pack the row of widgets
@@ -7223,6 +5912,7 @@ def PackFormIntoFrame(container_elem, containing_frame, toplevel_win):
 
 def ConvertFlexToTK(window):
     InitializeResults(window)
+    pass
     master = 000000
     PackFormIntoFrame(window, window.QFormLayout, window)
     # ....................................... DONE creating and laying out window ..........................#
@@ -7277,8 +5967,9 @@ def stop_timer(timer):
 def StartupTK(window):
     """
     Does the building of the window with all the widgets
-    :param window: you window object
-    :type window: (Window)
+    :param window:
+    :type window: Window
+    :return:
     """
 
     global using_pyqt5
@@ -7338,26 +6029,12 @@ def StartupTK(window):
     #     window.QTWindow.setWindowFlags(Qt.WindowStaysOnTopHint)
 
 
-    style = QtStyle('QMainWindow')
+    # style = 'QMainWindow {'
+    # style = window.QT_QMainWindow.styleSheet()
     if window.BackgroundColor is not None and window.BackgroundColor != COLOR_SYSTEM_DEFAULT:
-        style['background-color'] = window.BackgroundColor
-        window.QT_QMainWindow.setStyleSheet(str(style))
-
-    if window.margins != (None, None):
-        margin_left = margin_right = margin_top = margin_bottom = 0
-        if isinstance(window.margins[0], tuple):
-            margin_left = window.margins[0][0]
-            margin_right = window.margins[0][1]
-        elif isinstance(window.margins[0], int):
-            margin_left = window.margins[0]
-            margin_right = window.margins[0]
-        if isinstance(window.margins[1], tuple):
-            margin_top = window.margins[1][0]
-            margin_bottom = window.margins[1][1]
-        elif isinstance(window.margins[1], int):
-            margin_top = window.margins[1]
-            margin_bottom = window.margins[1]
-        window.QT_QMainWindow.setContentsMargins(margin_left, margin_top, margin_right, margin_bottom)
+        style = 'background-color: %s;' % window.BackgroundColor
+        # style += '}'
+        window.QT_QMainWindow.setStyleSheet(style)
 
     if window.BackgroundImage is not None:
         qlabel = QLabel(window.QTWindow)
@@ -7571,24 +6248,8 @@ class QuickMeter(object):
         return self.stat_messages
 
 
-def OneLineProgressMeter(title, current_value, max_value, key='OK for 1 meter', *args, orientation='v', bar_color=(None, None),
+def OneLineProgressMeter(title, current_value, max_value, key, *args, orientation='v', bar_color=(None, None),
                          button_color=None, size=DEFAULT_PROGRESS_BAR_SIZE, border_width=None, grab_anywhere=False):
-    """
-    :param orientation: 'horizontal' or 'vertical' ('h' or 'v' work) (Default value = 'vertical' / 'v')
-    :type orientation: (str)
-    :param bar_color: color of a bar line
-    :type bar_color: Tuple(str, str)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param size: (w,h) w=characters-wide, h=rows-high (Default value = DEFAULT_PROGRESS_BAR_SIZE)
-    :type size: Tuple[int, int]
-    :param border_width:  width of border around element
-    :type border_width: (int)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    """
     if key not in QuickMeter.active_meters:
         meter = QuickMeter(title, current_value, max_value, key, *args, orientation=orientation, bar_color=bar_color,
                            button_color=button_color, size=size, border_width=border_width, grab_anywhere=grab_anywhere)
@@ -7600,7 +6261,7 @@ def OneLineProgressMeter(title, current_value, max_value, key='OK for 1 meter', 
     OneLineProgressMeter.exit_reasons = getattr(OneLineProgressMeter,'exit_reasons', QuickMeter.exit_reasons)
     return rc == METER_OK
 
-def OneLineProgressMeterCancel(key='OK for 1 meter'):
+def OneLineProgressMeterCancel(key):
     try:
         meter = QuickMeter.active_meters[key]
         meter.window.Close()
@@ -7613,12 +6274,6 @@ def OneLineProgressMeterCancel(key='OK for 1 meter'):
 # input is #RRGGBB
 # output is #RRGGBB
 def GetComplimentaryHex(color):
-    """
-    :param color: color string, like "#RRGGBB"
-    :type color: (str)
-    :return color: color string, like "#RRGGBB"
-    :type color: (str)
-    """
     # strip the # from the beginning
     color = color[1:]
     # convert the string into hex
@@ -7704,36 +6359,6 @@ def PrintClose():
 def EasyPrint(*args, size=(None, None), end=None, sep=None, location=(None, None), font=None, no_titlebar=False,
               no_button=False, grab_anywhere=False, keep_on_top=False, do_not_reroute_stdout=True):
 
-    """
-    :param args: The arguments to display
-    :type args: List[Any]
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param end:  The end char to use just like print uses
-    :type end: (str)
-    :param sep: end character
-    :type end: (str)
-    :param sep: separator character
-    :type sep: (str)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param no_button: don't show button
-    :type no_button: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param do_not_reroute_stdout: do not reroute stdout
-    :type do_not_reroute_stdout: (bool)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param background_color: color of background
-    :type background_color: (str)
-    """
 
     if DebugWin.debug_window is None:
         DebugWin.debug_window = DebugWin(size=size, location=location, font=font, no_titlebar=no_titlebar,
@@ -7749,136 +6374,6 @@ def EasyPrintClose():
     if DebugWin.debug_window is not None:
         DebugWin.debug_window.Close()
         DebugWin.debug_window = None
-
-
-
-
-#                            d8b          888
-#                            Y8P          888
-#                                         888
-#   .d8888b 88888b.  888d888 888 88888b.  888888
-#  d88P"    888 "88b 888P"   888 888 "88b 888
-#  888      888  888 888     888 888  888 888
-#  Y88b.    888 d88P 888     888 888  888 Y88b.
-#   "Y8888P 88888P"  888     888 888  888  "Y888
-#           888
-#           888
-#           888
-
-
-
-CPRINT_DESTINATION_WINDOW = None
-CPRINT_DESTINATION_MULTILINE_ELMENT_KEY = None
-
-def cprint_set_output_destination(window, multiline_key):
-    """
-    Sets up the color print (cprint) output destination
-    :param window: The window that the cprint call will route the output to
-    :type window: (Window)
-    :param multiline_key: Key for the Multiline Element where output will be sent
-    :type multiline_key: (Any)
-    :return: None
-    :rtype: None
-    """
-
-    global CPRINT_DESTINATION_WINDOW, CPRINT_DESTINATION_MULTILINE_ELMENT_KEY
-
-    CPRINT_DESTINATION_WINDOW = window
-    CPRINT_DESTINATION_MULTILINE_ELMENT_KEY = multiline_key
-
-
-
-# def cprint(*args, **kwargs):
-def cprint(*args, end=None, sep=' ', text_color=None, t=None, background_color=None, b=None, colors=None, c=None, window=None, key=None):
-    """
-    Color print to a multiline element in a window of your choice.
-    Must have EITHER called cprint_set_output_destination prior to making this call so that the
-    window and element key can be saved and used here to route the output, OR used the window
-    and key parameters to the cprint function to specicy these items.
-
-    args is a variable number of things you want to print.
-
-    end - The end char to use just like print uses
-    sep - The separation character like print uses
-    text_color - The color of the text
-            key - overrides the previously defined Multiline key
-    window - overrides the previously defined window to output to
-    background_color - The color of the background
-    colors -(str, str) or str.  A combined text/background color definition in a single parameter
-
-    There are also "aliases" for text_color, background_color and colors (t, b, c)
-    t - An alias for color of the text (makes for shorter calls)
-    b - An alias for the background_color parameter
-    c - Tuple[str, str] - "shorthand" way of specifying color. (foreground, backgrouned)
-    c - str - can also be a string of the format "foreground on background"  ("white on red")
-
-    With the aliases it's possible to write the same print but in more compact ways:
-    cprint('This will print white text on red background', c=('white', 'red'))
-    cprint('This will print white text on red background', c='white on red')
-    cprint('This will print white text on red background', text_color='white', background_color='red')
-    cprint('This will print white text on red background', t='white', b='red')
-
-    :param *args: stuff to output
-    :type *args: (Any)
-    :param text_color: Color of the text
-    :type text_color: (str)
-    :param background_color: The background color of the line
-    :type background_color: (str)
-    :param colors: Either a tuple or a string that has both the text and background colors
-    :type colors: (str) or Tuple[str, str]
-    :param t: Color of the text
-    :type t: (str)
-    :param b: The background color of the line
-    :type b: (str)
-    :param c: Either a tuple or a string that has both the text and background colors
-    :type c: (str) or Tuple[str, str]
-    :param end: end character
-    :type end: (str)
-    :param sep: separator character
-    :type sep: (str)
-    :param key: key of multiline to output to (if you want to override the one previously set)
-    :type key: (Any)
-    :param window: Window containing the multiline to output to (if you want to override the one previously set)
-    :type window: (Window)
-    :return: None
-    :rtype: None
-    """
-
-    destination_key = CPRINT_DESTINATION_MULTILINE_ELMENT_KEY if key is None else key
-    destination_window = window or CPRINT_DESTINATION_WINDOW
-
-    if (destination_window is None and window is None) or (destination_key is None and key is None):
-        print('** Warning ** Attempting to perform a cprint without a valid window & key',
-              'Will instead print on Console',
-              'You can specify window and key in this cprint call, or set ahead of time using cprint_set_output_destination')
-        print(*args)
-        return
-
-    kw_text_color = text_color or t
-    kw_background_color = background_color or b
-    dual_color = colors or c
-    try:
-        if isinstance(dual_color, tuple):
-            kw_text_color = dual_color[0]
-            kw_background_color = dual_color[1]
-        elif isinstance(dual_color, str):
-            kw_text_color = dual_color.split(' on ')[0]
-            kw_background_color = dual_color.split(' on ')[1]
-    except Exception as e:
-        print('* cprint warning * you messed up with color formatting', e)
-
-    mline = destination_window.find_element(destination_key, silent_on_error=True)      # type: Multiline
-    try:
-        # mline = destination_window[destination_key]     # type: # Multiline
-        if end is None:
-            mline.print(*args, text_color=kw_text_color, background_color=kw_background_color, end='', sep=sep)
-            mline.print('')
-        else:
-            mline.print(*args,text_color=kw_text_color, background_color=kw_background_color, end=end, sep=sep)
-    except Exception as e:
-        print('** cprint error trying to print to the multiline. Printing to console instead **', e)
-        print(*args, end=end, sep=sep)
-
 
 
 # ------------------------------------------------------------------------------------------------ #
@@ -7924,38 +6419,6 @@ def _print_to_element(multiline_element, *args, end=None, sep=None, text_color=N
 # ===================================================#
 def PopupScrolled(*args, button_color=None, yes_no=False, auto_close=False, auto_close_duration=None,
                   size=(None, None), location=(None, None), title=None, non_blocking=False):
-    """
-    :param args: The arguments to display
-    :type args: List[Any]
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param yes_no: If True, displays Yes and No buttons instead of Ok
-    :type yes_no: (bool)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param size: (w,h) w=characters-wide, h=rows-high
-    :type size: Tuple[int, int]
-    :param location: Location on the screen to place the upper left corner of the window
-    :type location: Tuple[int, int]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    """
     if not args: return
     width, height = size
     width = width if width else MESSAGE_BOX_LINE_WIDTH
@@ -8003,10 +6466,6 @@ ScrolledTextBox = PopupScrolled
 # Sets the icon to be used by default                #
 # ===================================================#
 def SetGlobalIcon(icon):
-    """
-    :param icon: Either a Base64 byte string or a filename
-    :type icon: Union[bytes, str]
-    """
 
     try:
         with open(icon, 'r') as icon_file:
@@ -8032,80 +6491,6 @@ def SetOptions(icon=None, button_color=None, element_size=(None, None), button_e
                scrollbar_color=None, text_color=None, element_text_color=None, debug_win_size=(None, None),
                window_location=(None, None), error_button_color=(None,None),
                tooltip_time=None):
-    """
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param button_color: Color of the button (text, background)
-    :type button_color: Tuple[str, str]
-    :param element_size: element size (width, height) in characters
-    :type element_size: Tuple[int, int]
-    :param button_element_size: Size of button
-    :type button_element_size: Tuple[int, int]
-    :param margins: (left/right, top/bottom) tkinter margins around outsize. Amount of pixels to leave inside the window's frame around the edges before your elements are shown.
-    :type margins: Tuple[int, int]
-    :param element_padding: Default amount of padding to put around elements in window (left/right, top/bottom) or ((left, right), (top, bottom))
-    :type element_padding: Tuple[int, int] or ((int, int),(int,int))
-    :param auto_size_text: True if the Widget should be shrunk to exactly fit the number of chars to show
-    :type auto_size_text: bool
-    :param auto_size_buttons: True if Buttons in this Window should be sized to exactly fit the text on this.
-    :type auto_size_buttons: (bool)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param border_width:  width of border around element
-    :type border_width: (int)
-    :param slider_border_width: ???
-    :type slider_border_width: ???
-    :param slider_relief: ???
-    :type slider_relief: ???
-    :param slider_orientation: ???
-    :type slider_orientation: ???
-    :param autoclose_time: ???
-    :type autoclose_time: ???
-    :param message_box_line_width: ???
-    :type message_box_line_width: ???
-    :param progress_meter_border_depth: ???
-    :type progress_meter_border_depth: ???
-    :param progress_meter_style: You can no longer set a progress bar style. All ttk styles must be the same for the window
-    :type progress_meter_style: ???
-    :param progress_meter_relief:
-    :type progress_meter_relief: ???
-    :param progress_meter_color: ???
-    :type progress_meter_color: ???
-    :param progress_meter_size: ???
-    :type progress_meter_size: ???
-    :param text_justification: Default text justification for all Text Elements in window
-    :type text_justification: Union['left', 'right', 'center']
-    :param background_color: color of background
-    :type background_color: (str)
-    :param element_background_color: element background color
-    :type element_background_color: (str)
-    :param text_element_background_color: text element background color
-    :type text_element_background_color: (str)
-    :param input_elements_background_color: ???
-    :type input_elements_background_color: idk_yetReally
-    :param input_text_color: ???
-    :type input_text_color: ???
-    :param scrollbar_color: ???
-    :type scrollbar_color: ???
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param element_text_color: ???
-    :type element_text_color: ???
-    :param debug_win_size: window size
-    :type debug_win_size: Tuple[int, int]
-    :param window_location: (Default = (None))
-    :type window_location: ???
-    :param error_button_color: (Default = (None))
-    :type error_button_color: ???
-    :param tooltip_time: time in milliseconds to wait before showing a tooltip. Default is 400ms
-    :type tooltip_time: (int)
-    :param tooltip_font: font to use for all tooltips
-    :type tooltip_font: str or Tuple[str, int] or Tuple[str, int, str]
-    :param use_ttk_buttons: if True will cause all buttons to be ttk buttons
-    :type use_ttk_buttons: (bool)
-    :param ttk_theme: Theme to use with ttk widgets.  Choices (on Windows) include - 'default', 'winnative', 'clam', 'alt', 'classic', 'vista', 'xpnative'
-    :type ttk_theme: (str)
-    """
     global DEFAULT_ELEMENT_SIZE
     global DEFAULT_BUTTON_ELEMENT_SIZE
     global DEFAULT_MARGINS  # Margins for each LEFT/RIGHT margin is first term
@@ -8260,160 +6645,994 @@ def SetOptions(icon=None, button_color=None, element_size=(None, None), button_e
 # Predefined settings that will change the colors and styles #
 # of the elements.                                           #
 ##############################################################
-LOOK_AND_FEEL_TABLE = {
-"SystemDefault": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"SystemDefaultForReal": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": COLOR_SYSTEM_DEFAULT,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"SystemDefault1": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": COLOR_SYSTEM_DEFAULT,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"Material1": {"BACKGROUND": "#E3F2FD","TEXT": "#000000","INPUT": "#86A8FF","TEXT_INPUT": "#000000","SCROLL": "#86A8FF","BUTTON": ("#FFFFFF", "#5079D3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 0,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#FF0266","ACCENT2": "#FF5C93","ACCENT3": "#C5003C",},
-"Material2": {"BACKGROUND": "#FAFAFA","TEXT": "#000000","INPUT": "#004EA1","TEXT_INPUT": "#FFFFFF","SCROLL": "#5EA7FF","BUTTON": ("#FFFFFF", "#0079D3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 0,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#FF0266","ACCENT2": "#FF5C93","ACCENT3": "#C5003C",},
-"Reddit": {"BACKGROUND": "#ffffff","TEXT": "#1a1a1b","INPUT": "#dae0e6","TEXT_INPUT": "#222222","SCROLL": "#a5a4a4","BUTTON": ("#FFFFFF", "#0079d3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#ff5414","ACCENT2": "#33a8ff","ACCENT3": "#dbf0ff",},
-"Topanga": {"BACKGROUND": "#282923","TEXT": "#E7DB74","INPUT": "#393a32","TEXT_INPUT": "#E7C855","SCROLL": "#E7C855","BUTTON": ("#E7C855", "#284B5A"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#c15226","ACCENT2": "#7a4d5f","ACCENT3": "#889743",},
-"GreenTan": {"BACKGROUND": "#9FB8AD","TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": "#F7F3EC","TEXT_INPUT": "#000000","SCROLL": "#F7F3EC","BUTTON": ("#FFFFFF", "#475841"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Dark": {"BACKGROUND": "#404040","TEXT": "#FFFFFF","INPUT": "#4D4D4D","TEXT_INPUT": "#FFFFFF","SCROLL": "#707070","BUTTON": ("#FFFFFF", "#004F00"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightGreen": {"BACKGROUND": "#B7CECE","TEXT": "#000000","INPUT": "#FDFFF7","TEXT_INPUT": "#000000","SCROLL": "#FDFFF7","BUTTON": ("#FFFFFF", "#658268"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"ACCENT1": "#76506d","ACCENT2": "#5148f1","ACCENT3": "#0a1c84","PROGRESS_DEPTH": 0,},
-"Dark2": {"BACKGROUND": "#404040","TEXT": "#FFFFFF","INPUT": "#FFFFFF","TEXT_INPUT": "#000000","SCROLL": "#707070","BUTTON": ("#FFFFFF", "#004F00"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Black": {"BACKGROUND": "#000000","TEXT": "#FFFFFF","INPUT": "#4D4D4D","TEXT_INPUT": "#FFFFFF","SCROLL": "#707070","BUTTON": ("#000000", "#FFFFFF"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Tan": {"BACKGROUND": "#fdf6e3","TEXT": "#268bd1","INPUT": "#eee8d5","TEXT_INPUT": "#6c71c3","SCROLL": "#eee8d5","BUTTON": ("#FFFFFF", "#063542"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"TanBlue": {"BACKGROUND": "#e5dece","TEXT": "#063289","INPUT": "#f9f8f4","TEXT_INPUT": "#242834","SCROLL": "#eee8d5","BUTTON": ("#FFFFFF", "#063289"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkTanBlue": {"BACKGROUND": "#242834","TEXT": "#dfe6f8","INPUT": "#97755c","TEXT_INPUT": "#FFFFFF","SCROLL": "#a9afbb","BUTTON": ("#FFFFFF", "#063289"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkAmber": {"BACKGROUND": "#2c2825","TEXT": "#fdcb52","INPUT": "#705e52","TEXT_INPUT": "#fdcb52","SCROLL": "#705e52","BUTTON": ("#000000", "#fdcb52"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlue": {"BACKGROUND": "#1a2835","TEXT": "#d1ecff","INPUT": "#335267","TEXT_INPUT": "#acc2d0","SCROLL": "#1b6497","BUTTON": ("#000000", "#fafaf8"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Reds": {"BACKGROUND": "#280001","TEXT": "#FFFFFF","INPUT": "#d8d584","TEXT_INPUT": "#000000","SCROLL": "#763e00","BUTTON": ("#000000", "#daad28"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Green": {"BACKGROUND": "#82a459","TEXT": "#000000","INPUT": "#d8d584","TEXT_INPUT": "#000000","SCROLL": "#e3ecf3","BUTTON": ("#FFFFFF", "#517239"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"BluePurple": {"BACKGROUND": "#A5CADD","TEXT": "#6E266E","INPUT": "#E0F5FF","TEXT_INPUT": "#000000","SCROLL": "#E0F5FF","BUTTON": ("#FFFFFF", "#303952"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Purple": {"BACKGROUND": "#B0AAC2","TEXT": "#000000","INPUT": "#F2EFE8","SCROLL": "#F2EFE8","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#C2D4D8"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"BlueMono": {"BACKGROUND": "#AAB6D3","TEXT": "#000000","INPUT": "#F1F4FC","SCROLL": "#F1F4FC","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#7186C7"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"GreenMono": {"BACKGROUND": "#A8C1B4","TEXT": "#000000","INPUT": "#DDE0DE","SCROLL": "#E3E3E3","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#6D9F85"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"BrownBlue": {"BACKGROUND": "#64778d","TEXT": "#FFFFFF","INPUT": "#f0f3f7","SCROLL": "#A6B2BE","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#283b5b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"BrightColors": {"BACKGROUND": "#b4ffb4","TEXT": "#000000","INPUT": "#ffff64","SCROLL": "#ffb482","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#ffa0dc"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"NeutralBlue": {"BACKGROUND": "#92aa9d","TEXT": "#000000","INPUT": "#fcfff6","SCROLL": "#fcfff6","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#d0dbbd"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Kayak": {"BACKGROUND": "#a7ad7f","TEXT": "#000000","INPUT": "#e6d3a8","SCROLL": "#e6d3a8","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#5d907d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"SandyBeach": {"BACKGROUND": "#efeccb","TEXT": "#012f2f","INPUT": "#e6d3a8","SCROLL": "#e6d3a8","TEXT_INPUT": "#012f2f","BUTTON": ("#FFFFFF", "#046380"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"TealMono": {"BACKGROUND": "#a8cfdd","TEXT": "#000000","INPUT": "#dfedf2","SCROLL": "#dfedf2","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#183440"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"Default": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"Default1": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": COLOR_SYSTEM_DEFAULT,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"DefaultNoMoreNagging": {"BACKGROUND": COLOR_SYSTEM_DEFAULT,"TEXT": COLOR_SYSTEM_DEFAULT,"INPUT": COLOR_SYSTEM_DEFAULT,"TEXT_INPUT": COLOR_SYSTEM_DEFAULT,"SCROLL": COLOR_SYSTEM_DEFAULT,"BUTTON": OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,"PROGRESS": COLOR_SYSTEM_DEFAULT,"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"LightBlue": {"BACKGROUND": "#E3F2FD","TEXT": "#000000","INPUT": "#86A8FF","TEXT_INPUT": "#000000","SCROLL": "#86A8FF","BUTTON": ("#FFFFFF", "#5079D3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 0,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#FF0266","ACCENT2": "#FF5C93","ACCENT3": "#C5003C",},
-"LightGrey": {"BACKGROUND": "#FAFAFA","TEXT": "#000000","INPUT": "#004EA1","TEXT_INPUT": "#FFFFFF","SCROLL": "#5EA7FF","BUTTON": ("#FFFFFF", "#0079D3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 0,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#FF0266","ACCENT2": "#FF5C93","ACCENT3": "#C5003C",},
-"LightGrey1": {"BACKGROUND": "#ffffff","TEXT": "#1a1a1b","INPUT": "#dae0e6","TEXT_INPUT": "#222222","SCROLL": "#a5a4a4","BUTTON": ("#FFFFFF", "#0079d3"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#ff5414","ACCENT2": "#33a8ff","ACCENT3": "#dbf0ff",},
-"DarkBrown": {"BACKGROUND": "#282923","TEXT": "#E7DB74","INPUT": "#393a32","TEXT_INPUT": "#E7C855","SCROLL": "#E7C855","BUTTON": ("#E7C855", "#284B5A"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"ACCENT1": "#c15226","ACCENT2": "#7a4d5f","ACCENT3": "#889743",},
-"LightGreen1": {"BACKGROUND": "#9FB8AD","TEXT": "#000000","INPUT": "#F7F3EC","TEXT_INPUT": "#000000","SCROLL": "#F7F3EC","BUTTON": ("#FFFFFF", "#475841"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey": {"BACKGROUND": "#404040","TEXT": "#FFFFFF","INPUT": "#4D4D4D","TEXT_INPUT": "#FFFFFF","SCROLL": "#707070","BUTTON": ("#FFFFFF", "#004F00"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightGreen2": {"BACKGROUND": "#B7CECE","TEXT": "#000000","INPUT": "#FDFFF7","TEXT_INPUT": "#000000","SCROLL": "#FDFFF7","BUTTON": ("#FFFFFF", "#658268"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"ACCENT1": "#76506d","ACCENT2": "#5148f1","ACCENT3": "#0a1c84","PROGRESS_DEPTH": 0,},
-"DarkGrey1": {"BACKGROUND": "#404040","TEXT": "#FFFFFF","INPUT": "#FFFFFF","TEXT_INPUT": "#000000","SCROLL": "#707070","BUTTON": ("#FFFFFF", "#004F00"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlack": {"BACKGROUND": "#000000","TEXT": "#FFFFFF","INPUT": "#4D4D4D","TEXT_INPUT": "#FFFFFF","SCROLL": "#707070","BUTTON": ("#000000", "#FFFFFF"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBrown": {"BACKGROUND": "#fdf6e3","TEXT": "#268bd1","INPUT": "#eee8d5","TEXT_INPUT": "#6c71c3","SCROLL": "#eee8d5","BUTTON": ("#FFFFFF", "#063542"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBrown1": {"BACKGROUND": "#e5dece","TEXT": "#063289","INPUT": "#f9f8f4","TEXT_INPUT": "#242834","SCROLL": "#eee8d5","BUTTON": ("#FFFFFF", "#063289"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlue1": {"BACKGROUND": "#242834","TEXT": "#dfe6f8","INPUT": "#97755c","TEXT_INPUT": "#FFFFFF","SCROLL": "#a9afbb","BUTTON": ("#FFFFFF", "#063289"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBrown1": {"BACKGROUND": "#2c2825","TEXT": "#fdcb52","INPUT": "#705e52","TEXT_INPUT": "#fdcb52","SCROLL": "#705e52","BUTTON": ("#000000", "#fdcb52"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlue2": {"BACKGROUND": "#1a2835","TEXT": "#d1ecff","INPUT": "#335267","TEXT_INPUT": "#acc2d0","SCROLL": "#1b6497","BUTTON": ("#000000", "#fafaf8"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBrown2": {"BACKGROUND": "#280001","TEXT": "#FFFFFF","INPUT": "#d8d584","TEXT_INPUT": "#000000","SCROLL": "#763e00","BUTTON": ("#000000", "#daad28"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGreen": {"BACKGROUND": "#82a459","TEXT": "#000000","INPUT": "#d8d584","TEXT_INPUT": "#000000","SCROLL": "#e3ecf3","BUTTON": ("#FFFFFF", "#517239"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBlue1": {"BACKGROUND": "#A5CADD","TEXT": "#6E266E","INPUT": "#E0F5FF","TEXT_INPUT": "#000000","SCROLL": "#E0F5FF","BUTTON": ("#FFFFFF", "#303952"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightPurple": {"BACKGROUND": "#B0AAC2","TEXT": "#000000","INPUT": "#F2EFE8","SCROLL": "#F2EFE8","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#C2D4D8"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBlue2": {"BACKGROUND": "#AAB6D3","TEXT": "#000000","INPUT": "#F1F4FC","SCROLL": "#F1F4FC","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#7186C7"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightGreen3": {"BACKGROUND": "#A8C1B4","TEXT": "#000000","INPUT": "#DDE0DE","SCROLL": "#E3E3E3","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#6D9F85"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlue3": {"BACKGROUND": "#64778d","TEXT": "#FFFFFF","INPUT": "#f0f3f7","SCROLL": "#A6B2BE","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#283b5b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightGreen4": {"BACKGROUND": "#b4ffb4","TEXT": "#000000","INPUT": "#ffff64","SCROLL": "#ffb482","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#ffa0dc"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightGreen5": {"BACKGROUND": "#92aa9d","TEXT": "#000000","INPUT": "#fcfff6","SCROLL": "#fcfff6","TEXT_INPUT": "#000000","BUTTON": ("#000000", "#d0dbbd"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBrown2": {"BACKGROUND": "#a7ad7f","TEXT": "#000000","INPUT": "#e6d3a8","SCROLL": "#e6d3a8","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#5d907d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBrown3": {"BACKGROUND": "#efeccb","TEXT": "#012f2f","INPUT": "#e6d3a8","SCROLL": "#e6d3a8","TEXT_INPUT": "#012f2f","BUTTON": ("#FFFFFF", "#046380"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBlue3": {"BACKGROUND": "#a8cfdd","TEXT": "#000000","INPUT": "#dfedf2","SCROLL": "#dfedf2","TEXT_INPUT": "#000000","BUTTON": ("#FFFFFF", "#183440"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"LightBrown4": {"BACKGROUND": "#d7c79e","TEXT": "#a35638","INPUT": "#9dab86","TEXT_INPUT": "#000000","SCROLL": "#a35638","BUTTON": ("#FFFFFF", "#a35638"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#a35638", "#9dab86", "#e08f62", "#d7c79e"],},
-"DarkTeal": {"BACKGROUND": "#003f5c","TEXT": "#fb5b5a","INPUT": "#bc4873","TEXT_INPUT": "#FFFFFF","SCROLL": "#bc4873","BUTTON": ("#FFFFFF", "#fb5b5a"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#003f5c", "#472b62", "#bc4873", "#fb5b5a"],},
-"DarkPurple": {"BACKGROUND": "#472b62","TEXT": "#fb5b5a","INPUT": "#bc4873","TEXT_INPUT": "#FFFFFF","SCROLL": "#bc4873","BUTTON": ("#FFFFFF", "#472b62"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#003f5c", "#472b62", "#bc4873", "#fb5b5a"],},
-"LightGreen6": {"BACKGROUND": "#eafbea","TEXT": "#1f6650","INPUT": "#6f9a8d","TEXT_INPUT": "#FFFFFF","SCROLL": "#1f6650","BUTTON": ("#FFFFFF", "#1f6650"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#1f6650", "#6f9a8d", "#ea5e5e", "#eafbea"],},
-"DarkGrey2": {"BACKGROUND": "#2b2b28","TEXT": "#f8f8f8","INPUT": "#f1d6ab","TEXT_INPUT": "#000000","SCROLL": "#f1d6ab","BUTTON": ("#2b2b28", "#e3b04b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#2b2b28", "#e3b04b", "#f1d6ab", "#f8f8f8"],},
-"LightBrown6": {"BACKGROUND": "#f9b282","TEXT": "#8f4426","INPUT": "#de6b35","TEXT_INPUT": "#FFFFFF","SCROLL": "#8f4426","BUTTON": ("#FFFFFF", "#8f4426"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#8f4426", "#de6b35", "#64ccda", "#f9b282"],},
-"DarkTeal1": {"BACKGROUND": "#396362","TEXT": "#ffe7d1","INPUT": "#f6c89f","TEXT_INPUT": "#000000","SCROLL": "#f6c89f","BUTTON": ("#ffe7d1", "#4b8e8d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#396362", "#4b8e8d", "#f6c89f", "#ffe7d1"],},
-"LightBrown7": {"BACKGROUND": "#f6c89f","TEXT": "#396362","INPUT": "#4b8e8d","TEXT_INPUT": "#FFFFFF","SCROLL": "#396362","BUTTON": ("#FFFFFF", "#396362"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#396362", "#4b8e8d", "#f6c89f", "#ffe7d1"],},
-"DarkPurple1": {"BACKGROUND": "#0c093c","TEXT": "#fad6d6","INPUT": "#eea5f6","TEXT_INPUT": "#000000","SCROLL": "#eea5f6","BUTTON": ("#FFFFFF", "#df42d1"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#0c093c", "#df42d1", "#eea5f6", "#fad6d6"],},
-"DarkGrey3": {"BACKGROUND": "#211717","TEXT": "#dfddc7","INPUT": "#f58b54","TEXT_INPUT": "#000000","SCROLL": "#f58b54","BUTTON": ("#dfddc7", "#a34a28"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#211717", "#a34a28", "#f58b54", "#dfddc7"],},
-"LightBrown8": {"BACKGROUND": "#dfddc7","TEXT": "#211717","INPUT": "#a34a28","TEXT_INPUT": "#dfddc7","SCROLL": "#211717","BUTTON": ("#dfddc7", "#a34a28"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#211717", "#a34a28", "#f58b54", "#dfddc7"],},
-"DarkBlue4": {"BACKGROUND": "#494ca2","TEXT": "#e3e7f1","INPUT": "#c6cbef","TEXT_INPUT": "#000000","SCROLL": "#c6cbef","BUTTON": ("#FFFFFF", "#8186d5"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#494ca2", "#8186d5", "#c6cbef", "#e3e7f1"],},
-"LightBlue4": {"BACKGROUND": "#5c94bd","TEXT": "#470938","INPUT": "#1a3e59","TEXT_INPUT": "#FFFFFF","SCROLL": "#470938","BUTTON": ("#FFFFFF", "#470938"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#470938", "#1a3e59", "#5c94bd", "#f2d6eb"],},
-"DarkTeal2": {"BACKGROUND": "#394a6d","TEXT": "#c0ffb3","INPUT": "#52de97","TEXT_INPUT": "#000000","SCROLL": "#52de97","BUTTON": ("#c0ffb3", "#394a6d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#394a6d", "#3c9d9b", "#52de97", "#c0ffb3"],},
-"DarkTeal3": {"BACKGROUND": "#3c9d9b","TEXT": "#c0ffb3","INPUT": "#52de97","TEXT_INPUT": "#000000","SCROLL": "#52de97","BUTTON": ("#c0ffb3", "#394a6d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#394a6d", "#3c9d9b", "#52de97", "#c0ffb3"],},
-"DarkPurple5": {"BACKGROUND": "#730068","TEXT": "#f6f078","INPUT": "#01d28e","TEXT_INPUT": "#000000","SCROLL": "#01d28e","BUTTON": ("#f6f078", "#730068"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#730068", "#434982", "#01d28e", "#f6f078"],},
-"DarkPurple2": {"BACKGROUND": "#202060","TEXT": "#b030b0","INPUT": "#602080","TEXT_INPUT": "#FFFFFF","SCROLL": "#602080","BUTTON": ("#FFFFFF", "#202040"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#202040", "#202060", "#602080", "#b030b0"],},
-"DarkBlue5": {"BACKGROUND": "#000272","TEXT": "#ff6363","INPUT": "#a32f80","TEXT_INPUT": "#FFFFFF","SCROLL": "#a32f80","BUTTON": ("#FFFFFF", "#341677"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#000272", "#341677", "#a32f80", "#ff6363"],},
-"LightGrey2": {"BACKGROUND": "#f6f6f6","TEXT": "#420000","INPUT": "#d4d7dd","TEXT_INPUT": "#420000","SCROLL": "#420000","BUTTON": ("#420000", "#d4d7dd"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#420000", "#d4d7dd", "#eae9e9", "#f6f6f6"],},
-"LightGrey3": {"BACKGROUND": "#eae9e9","TEXT": "#420000","INPUT": "#d4d7dd","TEXT_INPUT": "#420000","SCROLL": "#420000","BUTTON": ("#420000", "#d4d7dd"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#420000", "#d4d7dd", "#eae9e9", "#f6f6f6"],},
-"DarkBlue6": {"BACKGROUND": "#01024e","TEXT": "#ff6464","INPUT": "#8b4367","TEXT_INPUT": "#FFFFFF","SCROLL": "#8b4367","BUTTON": ("#FFFFFF", "#543864"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#01024e", "#543864", "#8b4367", "#ff6464"],},
-"DarkBlue7": {"BACKGROUND": "#241663","TEXT": "#eae7af","INPUT": "#a72693","TEXT_INPUT": "#eae7af","SCROLL": "#a72693","BUTTON": ("#eae7af", "#160f30"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#160f30", "#241663", "#a72693", "#eae7af"],},
-"LightBrown9": {"BACKGROUND": "#f6d365","TEXT": "#3a1f5d","INPUT": "#c83660","TEXT_INPUT": "#f6d365","SCROLL": "#3a1f5d","BUTTON": ("#f6d365", "#c83660"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3a1f5d", "#c83660", "#e15249", "#f6d365"],},
-"DarkPurple3": {"BACKGROUND": "#6e2142","TEXT": "#ffd692","INPUT": "#e16363","TEXT_INPUT": "#ffd692","SCROLL": "#e16363","BUTTON": ("#ffd692", "#943855"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#6e2142", "#943855", "#e16363", "#ffd692"],},
-"LightBrown10": {"BACKGROUND": "#ffd692","TEXT": "#6e2142","INPUT": "#943855","TEXT_INPUT": "#FFFFFF","SCROLL": "#6e2142","BUTTON": ("#FFFFFF", "#6e2142"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#6e2142", "#943855", "#e16363", "#ffd692"],},
-"DarkPurple4": {"BACKGROUND": "#200f21","TEXT": "#f638dc","INPUT": "#5a3d5c","TEXT_INPUT": "#FFFFFF","SCROLL": "#5a3d5c","BUTTON": ("#FFFFFF", "#382039"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#200f21", "#382039", "#5a3d5c", "#f638dc"],},
-"LightBlue5": {"BACKGROUND": "#b2fcff","TEXT": "#3e64ff","INPUT": "#5edfff","TEXT_INPUT": "#000000","SCROLL": "#3e64ff","BUTTON": ("#FFFFFF", "#3e64ff"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3e64ff", "#5edfff", "#b2fcff", "#ecfcff"],},
-"DarkTeal4": {"BACKGROUND": "#464159","TEXT": "#c7f0db","INPUT": "#8bbabb","TEXT_INPUT": "#000000","SCROLL": "#8bbabb","BUTTON": ("#FFFFFF", "#6c7b95"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#464159", "#6c7b95", "#8bbabb", "#c7f0db"],},
-"LightTeal": {"BACKGROUND": "#c7f0db","TEXT": "#464159","INPUT": "#6c7b95","TEXT_INPUT": "#FFFFFF","SCROLL": "#464159","BUTTON": ("#FFFFFF", "#464159"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#464159", "#6c7b95", "#8bbabb", "#c7f0db"],},
-"DarkTeal5": {"BACKGROUND": "#8bbabb","TEXT": "#464159","INPUT": "#6c7b95","TEXT_INPUT": "#FFFFFF","SCROLL": "#464159","BUTTON": ("#c7f0db", "#6c7b95"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#464159", "#6c7b95", "#8bbabb", "#c7f0db"],},
-"LightGrey4": {"BACKGROUND": "#faf5ef","TEXT": "#672f2f","INPUT": "#99b19c","TEXT_INPUT": "#672f2f","SCROLL": "#672f2f","BUTTON": ("#672f2f", "#99b19c"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#672f2f", "#99b19c", "#d7d1c9", "#faf5ef"],},
-"LightGreen7": {"BACKGROUND": "#99b19c","TEXT": "#faf5ef","INPUT": "#d7d1c9","TEXT_INPUT": "#000000","SCROLL": "#d7d1c9","BUTTON": ("#FFFFFF", "#99b19c"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#672f2f", "#99b19c", "#d7d1c9", "#faf5ef"],},
-"LightGrey5": {"BACKGROUND": "#d7d1c9","TEXT": "#672f2f","INPUT": "#99b19c","TEXT_INPUT": "#672f2f","SCROLL": "#672f2f","BUTTON": ("#FFFFFF", "#672f2f"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#672f2f", "#99b19c", "#d7d1c9", "#faf5ef"],},
-"DarkBrown3": {"BACKGROUND": "#a0855b","TEXT": "#f9f6f2","INPUT": "#f1d6ab","TEXT_INPUT": "#000000","SCROLL": "#f1d6ab","BUTTON": ("#FFFFFF", "#38470b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#38470b", "#a0855b", "#f1d6ab", "#f9f6f2"],},
-"LightBrown11": {"BACKGROUND": "#f1d6ab","TEXT": "#38470b","INPUT": "#a0855b","TEXT_INPUT": "#FFFFFF","SCROLL": "#38470b","BUTTON": ("#f9f6f2", "#a0855b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#38470b", "#a0855b", "#f1d6ab", "#f9f6f2"],},
-"DarkRed": {"BACKGROUND": "#83142c","TEXT": "#f9d276","INPUT": "#ad1d45","TEXT_INPUT": "#FFFFFF","SCROLL": "#ad1d45","BUTTON": ("#f9d276", "#ad1d45"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#44000d", "#83142c", "#ad1d45", "#f9d276"],},
-"DarkTeal6": {"BACKGROUND": "#204969","TEXT": "#fff7f7","INPUT": "#dadada","TEXT_INPUT": "#000000","SCROLL": "#dadada","BUTTON": ("#000000", "#fff7f7"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#204969", "#08ffc8", "#dadada", "#fff7f7"],},
-"DarkBrown4": {"BACKGROUND": "#252525","TEXT": "#ff0000","INPUT": "#af0404","TEXT_INPUT": "#FFFFFF","SCROLL": "#af0404","BUTTON": ("#FFFFFF", "#252525"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#252525", "#414141", "#af0404", "#ff0000"],},
-"LightYellow": {"BACKGROUND": "#f4ff61","TEXT": "#27aa80","INPUT": "#32ff6a","TEXT_INPUT": "#000000","SCROLL": "#27aa80","BUTTON": ("#f4ff61", "#27aa80"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#27aa80", "#32ff6a", "#a8ff3e", "#f4ff61"],},
-"DarkGreen1": {"BACKGROUND": "#2b580c","TEXT": "#fdef96","INPUT": "#f7b71d","TEXT_INPUT": "#000000","SCROLL": "#f7b71d","BUTTON": ("#fdef96", "#2b580c"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#2b580c", "#afa939", "#f7b71d", "#fdef96"],},
-"LightGreen8": {"BACKGROUND": "#c8dad3","TEXT": "#63707e","INPUT": "#93b5b3","TEXT_INPUT": "#000000","SCROLL": "#63707e","BUTTON": ("#FFFFFF", "#63707e"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#63707e", "#93b5b3", "#c8dad3", "#f2f6f5"],},
-"DarkTeal7": {"BACKGROUND": "#248ea9","TEXT": "#fafdcb","INPUT": "#aee7e8","TEXT_INPUT": "#000000","SCROLL": "#aee7e8","BUTTON": ("#000000", "#fafdcb"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#248ea9", "#28c3d4", "#aee7e8", "#fafdcb"],},
-"DarkBlue8": {"BACKGROUND": "#454d66","TEXT": "#d9d872","INPUT": "#58b368","TEXT_INPUT": "#000000","SCROLL": "#58b368","BUTTON": ("#000000", "#009975"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#009975", "#454d66", "#58b368", "#d9d872"],},
-"DarkBlue9": {"BACKGROUND": "#263859","TEXT": "#ff6768","INPUT": "#6b778d","TEXT_INPUT": "#FFFFFF","SCROLL": "#6b778d","BUTTON": ("#ff6768", "#263859"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#17223b", "#263859", "#6b778d", "#ff6768"],},
-"DarkBlue10": {"BACKGROUND": "#0028ff","TEXT": "#f1f4df","INPUT": "#10eaf0","TEXT_INPUT": "#000000","SCROLL": "#10eaf0","BUTTON": ("#f1f4df", "#24009c"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#24009c", "#0028ff", "#10eaf0", "#f1f4df"],},
-"DarkBlue11": {"BACKGROUND": "#6384b3","TEXT": "#e6f0b6","INPUT": "#b8e9c0","TEXT_INPUT": "#000000","SCROLL": "#b8e9c0","BUTTON": ("#e6f0b6", "#684949"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#684949", "#6384b3", "#b8e9c0", "#e6f0b6"],},
-"DarkTeal8": {"BACKGROUND": "#71a0a5","TEXT": "#212121","INPUT": "#665c84","TEXT_INPUT": "#FFFFFF","SCROLL": "#212121","BUTTON": ("#fab95b", "#665c84"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#212121", "#665c84", "#71a0a5", "#fab95b"],},
-"DarkRed1": {"BACKGROUND": "#c10000","TEXT": "#eeeeee","INPUT": "#dedede","TEXT_INPUT": "#000000","SCROLL": "#dedede","BUTTON": ("#c10000", "#eeeeee"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#c10000", "#ff4949", "#dedede", "#eeeeee"],},
-"LightBrown5": {"BACKGROUND": "#fff591","TEXT": "#e41749","INPUT": "#f5587b","TEXT_INPUT": "#000000","SCROLL": "#e41749","BUTTON": ("#fff591", "#e41749"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#e41749", "#f5587b", "#ff8a5c", "#fff591"],},
-"LightGreen9": {"BACKGROUND": "#f1edb3","TEXT": "#3b503d","INPUT": "#4a746e","TEXT_INPUT": "#f1edb3","SCROLL": "#3b503d","BUTTON": ("#f1edb3", "#3b503d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3b503d", "#4a746e", "#c8cf94", "#f1edb3"],"DESCRIPTION": ["Green", "Turquoise", "Yellow"],},
-"DarkGreen2": {"BACKGROUND": "#3b503d","TEXT": "#f1edb3","INPUT": "#c8cf94","TEXT_INPUT": "#000000","SCROLL": "#c8cf94","BUTTON": ("#f1edb3", "#3b503d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3b503d", "#4a746e", "#c8cf94", "#f1edb3"],"DESCRIPTION": ["Green", "Turquoise", "Yellow"],},
-"LightGray1": {"BACKGROUND": "#f2f2f2","TEXT": "#222831","INPUT": "#393e46","TEXT_INPUT": "#FFFFFF","SCROLL": "#222831","BUTTON": ("#f2f2f2", "#222831"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#222831", "#393e46", "#f96d00", "#f2f2f2"],"DESCRIPTION": ["#000000", "Grey", "Orange", "Grey", "Autumn"],},
-"DarkGrey4": {"BACKGROUND": "#52524e","TEXT": "#e9e9e5","INPUT": "#d4d6c8","TEXT_INPUT": "#000000","SCROLL": "#d4d6c8","BUTTON": ("#FFFFFF", "#9a9b94"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#52524e", "#9a9b94", "#d4d6c8", "#e9e9e5"],"DESCRIPTION": ["Grey", "Pastel", "Winter"],},
-"DarkBlue12": {"BACKGROUND": "#324e7b","TEXT": "#f8f8f8","INPUT": "#86a6df","TEXT_INPUT": "#000000","SCROLL": "#86a6df","BUTTON": ("#FFFFFF", "#5068a9"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#324e7b", "#5068a9", "#86a6df", "#f8f8f8"],"DESCRIPTION": ["Blue", "Grey", "Cold", "Winter"],},
-"DarkPurple6": {"BACKGROUND": "#070739","TEXT": "#e1e099","INPUT": "#c327ab","TEXT_INPUT": "#e1e099","SCROLL": "#c327ab","BUTTON": ("#e1e099", "#521477"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#070739", "#521477", "#c327ab", "#e1e099"],"DESCRIPTION": ["#000000", "Purple", "Yellow", "Dark"],},
-"DarkPurple7": {"BACKGROUND": "#191930","TEXT": "#B1B7C5","INPUT": "#232B5C","TEXT_INPUT": "#D0E3E7","SCROLL": "#B1B7C5","BUTTON": ("#272D38", "#B1B7C5"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBlue13": {"BACKGROUND": "#203562","TEXT": "#e3e8f8","INPUT": "#c0c5cd","TEXT_INPUT": "#000000","SCROLL": "#c0c5cd","BUTTON": ("#FFFFFF", "#3e588f"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#203562", "#3e588f", "#c0c5cd", "#e3e8f8"],"DESCRIPTION": ["Blue", "Grey", "Wedding", "Cold"],},
-"DarkBrown5": {"BACKGROUND": "#3c1b1f","TEXT": "#f6e1b5","INPUT": "#e2bf81","TEXT_INPUT": "#000000","SCROLL": "#e2bf81","BUTTON": ("#3c1b1f", "#f6e1b5"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3c1b1f", "#b21e4b", "#e2bf81", "#f6e1b5"],"DESCRIPTION": ["Brown", "Red", "Yellow", "Warm"],},
-"DarkGreen3": {"BACKGROUND": "#062121","TEXT": "#eeeeee","INPUT": "#e4dcad","TEXT_INPUT": "#000000","SCROLL": "#e4dcad","BUTTON": ("#eeeeee", "#181810"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#062121", "#181810", "#e4dcad", "#eeeeee"],"DESCRIPTION": ["#000000", "#000000", "Brown", "Grey"],},
-"DarkBlack1": {"BACKGROUND": "#181810","TEXT": "#eeeeee","INPUT": "#e4dcad","TEXT_INPUT": "#000000","SCROLL": "#e4dcad","BUTTON": ("#FFFFFF", "#062121"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#062121", "#181810", "#e4dcad", "#eeeeee"],"DESCRIPTION": ["#000000", "#000000", "Brown", "Grey"],},
-"DarkGrey5": {"BACKGROUND": "#343434","TEXT": "#f3f3f3","INPUT": "#e9dcbe","TEXT_INPUT": "#000000","SCROLL": "#e9dcbe","BUTTON": ("#FFFFFF", "#8e8b82"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#343434", "#8e8b82", "#e9dcbe", "#f3f3f3"],"DESCRIPTION": ["Grey", "Brown"],},
-"LightBrown12": {"BACKGROUND": "#8e8b82","TEXT": "#f3f3f3","INPUT": "#e9dcbe","TEXT_INPUT": "#000000","SCROLL": "#e9dcbe","BUTTON": ("#f3f3f3", "#8e8b82"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#343434", "#8e8b82", "#e9dcbe", "#f3f3f3"],"DESCRIPTION": ["Grey", "Brown"],},
-"DarkTeal9": {"BACKGROUND": "#13445a","TEXT": "#fef4e8","INPUT": "#446878","TEXT_INPUT": "#FFFFFF","SCROLL": "#446878","BUTTON": ("#fef4e8", "#446878"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#13445a", "#970747", "#446878", "#fef4e8"],"DESCRIPTION": ["Red", "Grey", "Blue", "Wedding", "Retro"],},
-"DarkBlue14": {"BACKGROUND": "#21273d","TEXT": "#f1f6f8","INPUT": "#b9d4f1","TEXT_INPUT": "#000000","SCROLL": "#b9d4f1","BUTTON": ("#FFFFFF", "#6a759b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#21273d", "#6a759b", "#b9d4f1", "#f1f6f8"],"DESCRIPTION": ["Blue", "#000000", "Grey", "Cold", "Winter"],},
-"LightBlue6": {"BACKGROUND": "#f1f6f8","TEXT": "#21273d","INPUT": "#6a759b","TEXT_INPUT": "#FFFFFF","SCROLL": "#21273d","BUTTON": ("#f1f6f8", "#6a759b"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#21273d", "#6a759b", "#b9d4f1", "#f1f6f8"],"DESCRIPTION": ["Blue", "#000000", "Grey", "Cold", "Winter"],},
-"DarkGreen4": {"BACKGROUND": "#044343","TEXT": "#e4e4e4","INPUT": "#045757","TEXT_INPUT": "#e4e4e4","SCROLL": "#045757","BUTTON": ("#e4e4e4", "#045757"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#222222", "#044343", "#045757", "#e4e4e4"],"DESCRIPTION": ["#000000", "Turquoise", "Grey", "Dark"],},
-"DarkGreen5": {"BACKGROUND": "#1b4b36","TEXT": "#e0e7f1","INPUT": "#aebd77","TEXT_INPUT": "#000000","SCROLL": "#aebd77","BUTTON": ("#FFFFFF", "#538f6a"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#1b4b36", "#538f6a", "#aebd77", "#e0e7f1"],"DESCRIPTION": ["Green", "Grey"],},
-"DarkTeal10": {"BACKGROUND": "#0d3446","TEXT": "#d8dfe2","INPUT": "#71adb5","TEXT_INPUT": "#000000","SCROLL": "#71adb5","BUTTON": ("#FFFFFF", "#176d81"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#0d3446", "#176d81", "#71adb5", "#d8dfe2"],"DESCRIPTION": ["Grey", "Turquoise", "Winter", "Cold"],},
-"DarkGrey6": {"BACKGROUND": "#3e3e3e","TEXT": "#ededed","INPUT": "#68868c","TEXT_INPUT": "#ededed","SCROLL": "#68868c","BUTTON": ("#FFFFFF", "#405559"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3e3e3e", "#405559", "#68868c", "#ededed"],"DESCRIPTION": ["Grey", "Turquoise", "Winter"],},
-"DarkTeal11": {"BACKGROUND": "#405559","TEXT": "#ededed","INPUT": "#68868c","TEXT_INPUT": "#ededed","SCROLL": "#68868c","BUTTON": ("#ededed", "#68868c"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#3e3e3e", "#405559", "#68868c", "#ededed"],"DESCRIPTION": ["Grey", "Turquoise", "Winter"],},
-"LightBlue7": {"BACKGROUND": "#9ed0e0","TEXT": "#19483f","INPUT": "#5c868e","TEXT_INPUT": "#FFFFFF","SCROLL": "#19483f","BUTTON": ("#FFFFFF", "#19483f"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#19483f", "#5c868e", "#ff6a38", "#9ed0e0"],"DESCRIPTION": ["Orange", "Blue", "Turquoise"],},
-"LightGreen10": {"BACKGROUND": "#d8ebb5","TEXT": "#205d67","INPUT": "#639a67","TEXT_INPUT": "#FFFFFF","SCROLL": "#205d67","BUTTON": ("#d8ebb5", "#205d67"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#205d67", "#639a67", "#d9bf77", "#d8ebb5"],"DESCRIPTION": ["Blue", "Green", "Brown", "Vintage"],},
-"DarkBlue15": {"BACKGROUND": "#151680","TEXT": "#f1fea4","INPUT": "#375fc0","TEXT_INPUT": "#f1fea4","SCROLL": "#375fc0","BUTTON": ("#f1fea4", "#1c44ac"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#151680", "#1c44ac", "#375fc0", "#f1fea4"],"DESCRIPTION": ["Blue", "Yellow", "Cold"],},
-"DarkBlue16": {"BACKGROUND": "#1c44ac","TEXT": "#f1fea4","INPUT": "#375fc0","TEXT_INPUT": "#f1fea4","SCROLL": "#375fc0","BUTTON": ("#f1fea4", "#151680"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#151680", "#1c44ac", "#375fc0", "#f1fea4"],"DESCRIPTION": ["Blue", "Yellow", "Cold"],},
-"DarkTeal12": {"BACKGROUND": "#004a7c","TEXT": "#fafafa","INPUT": "#e8f1f5","TEXT_INPUT": "#000000","SCROLL": "#e8f1f5","BUTTON": ("#fafafa", "#005691"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#004a7c", "#005691", "#e8f1f5", "#fafafa"],"DESCRIPTION": ["Grey", "Blue", "Cold", "Winter"],},
-"LightBrown13": {"BACKGROUND": "#ebf5ee","TEXT": "#921224","INPUT": "#bdc6b8","TEXT_INPUT": "#921224","SCROLL": "#921224","BUTTON": ("#FFFFFF", "#921224"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#921224", "#bdc6b8", "#bce0da", "#ebf5ee"],"DESCRIPTION": ["Red", "Blue", "Grey", "Vintage", "Wedding"],},
-"DarkBlue17": {"BACKGROUND": "#21294c","TEXT": "#f9f2d7","INPUT": "#f2dea8","TEXT_INPUT": "#000000","SCROLL": "#f2dea8","BUTTON": ("#f9f2d7", "#141829"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#141829", "#21294c", "#f2dea8", "#f9f2d7"],"DESCRIPTION": ["#000000", "Blue", "Yellow"],},
-"DarkBrown6": {"BACKGROUND": "#785e4d","TEXT": "#f2eee3","INPUT": "#baaf92","TEXT_INPUT": "#000000","SCROLL": "#baaf92","BUTTON": ("#FFFFFF", "#785e4d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#785e4d", "#ff8426", "#baaf92", "#f2eee3"],"DESCRIPTION": ["Grey", "Brown", "Orange", "Autumn"],},
-"DarkGreen6": {"BACKGROUND": "#5c715e","TEXT": "#f2f9f1","INPUT": "#ddeedf","TEXT_INPUT": "#000000","SCROLL": "#ddeedf","BUTTON": ("#f2f9f1", "#5c715e"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#5c715e", "#b6cdbd", "#ddeedf", "#f2f9f1"],"DESCRIPTION": ["Grey", "Green", "Vintage"],},
-"DarkGreen7": {"BACKGROUND": "#0C231E","TEXT": "#efbe1c","INPUT": "#153C33","TEXT_INPUT": "#efbe1c","SCROLL": "#153C33","BUTTON": ("#efbe1c", "#153C33"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey7": {"BACKGROUND": "#4b586e","TEXT": "#dddddd","INPUT": "#574e6d","TEXT_INPUT": "#dddddd","SCROLL": "#574e6d","BUTTON": ("#dddddd", "#43405d"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#43405d", "#4b586e", "#574e6d", "#dddddd"],"DESCRIPTION": ["Grey", "Winter", "Cold"],},
-"DarkRed2": {"BACKGROUND": "#ab1212","TEXT": "#f6e4b5","INPUT": "#cd3131","TEXT_INPUT": "#f6e4b5","SCROLL": "#cd3131","BUTTON": ("#f6e4b5", "#ab1212"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#ab1212", "#1fad9f", "#cd3131", "#f6e4b5"],"DESCRIPTION": ["Turquoise", "Red", "Yellow"],},
-"LightGrey6": {"BACKGROUND": "#e3e3e3","TEXT": "#233142","INPUT": "#455d7a","TEXT_INPUT": "#e3e3e3","SCROLL": "#233142","BUTTON": ("#e3e3e3", "#455d7a"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,"COLOR_LIST": ["#233142", "#455d7a", "#f95959", "#e3e3e3"],"DESCRIPTION": ["#000000", "Blue", "Red", "Grey"],},
-"HotDogStand": {"BACKGROUND": "red","TEXT": "yellow","INPUT": "yellow","TEXT_INPUT": "#000000","SCROLL": "yellow","BUTTON": ("red", "yellow"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey8": {"BACKGROUND": "#19232D","TEXT": "#ffffff","INPUT": "#32414B","TEXT_INPUT": "#ffffff","SCROLL": "#505F69","BUTTON": ("#ffffff", "#32414B"),"PROGRESS": ("#505F69", "#32414B"),"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey9": {"BACKGROUND": "#36393F","TEXT": "#DCDDDE","INPUT": "#40444B","TEXT_INPUT": "#ffffff","SCROLL": "#202225","BUTTON": ("#202225", "#B9BBBE"),"PROGRESS": ("#202225", "#40444B"),"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey10": {"BACKGROUND": "#1c1e23","TEXT": "#cccdcf","INPUT": "#272a31","TEXT_INPUT": "#8b9fde","SCROLL": "#313641","BUTTON": ("#f5f5f6", "#2e3d5a"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey11": {"BACKGROUND": "#1c1e23","TEXT": "#cccdcf","INPUT": "#313641","TEXT_INPUT": "#cccdcf","SCROLL": "#313641","BUTTON": ("#f5f5f6", "#313641"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey12": {"BACKGROUND": "#1c1e23","TEXT": "#8b9fde","INPUT": "#313641","TEXT_INPUT": "#8b9fde","SCROLL": "#313641","BUTTON": ("#cccdcf", "#2e3d5a"),"PROGRESS": DEFAULT_PROGRESS_BAR_COMPUTE,"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey13": {"BACKGROUND": "#1c1e23","TEXT": "#cccdcf","INPUT": "#272a31","TEXT_INPUT": "#cccdcf","SCROLL": "#313641","BUTTON": ("#8b9fde", "#313641"),"PROGRESS": ("#cccdcf", "#272a31"),"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkGrey14": {"BACKGROUND": "#24292e","TEXT": "#fafbfc","INPUT": "#1d2125","TEXT_INPUT": "#fafbfc","SCROLL": "#1d2125","BUTTON": ("#fafbfc", "#155398"),"PROGRESS": ("#155398", "#1d2125"),"BORDER": 1,"SLIDER_DEPTH": 0,"PROGRESS_DEPTH": 0,},
-"DarkBrown7": {"BACKGROUND": "#2c2417","TEXT": "#baa379","INPUT": "#baa379","TEXT_INPUT": "#000000","SCROLL": "#392e1c","BUTTON": ("#000000", "#baa379"),"PROGRESS": ("#baa379", "#453923"),"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-"Python": {"BACKGROUND": "#3d7aab","TEXT": "#ffde56","INPUT": "#295273","TEXT_INPUT": "#ffde56","SCROLL": "#295273","BUTTON": ("#ffde56", "#295273"),"PROGRESS": ("#ffde56", "#295273"),"BORDER": 1,"SLIDER_DEPTH": 1,"PROGRESS_DEPTH": 0,},
-}
+LOOK_AND_FEEL_TABLE = {'SystemDefault':
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
 
+                       'SystemDefaultForReal':
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': COLOR_SYSTEM_DEFAULT,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
+
+                       'SystemDefault1':
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': COLOR_SYSTEM_DEFAULT,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
+
+                       'Material1': {'BACKGROUND': '#E3F2FD',
+                                     'TEXT': '#000000',
+                                     'INPUT': '#86A8FF',
+                                     'TEXT_INPUT': '#000000',
+                                     'SCROLL': '#86A8FF',
+                                     'BUTTON': ('#FFFFFF', '#5079D3'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 0, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'ACCENT1': '#FF0266',
+                                     'ACCENT2': '#FF5C93',
+                                     'ACCENT3': '#C5003C'},
+
+                       'Material2': {'BACKGROUND': '#FAFAFA',
+                                     'TEXT': '#000000',
+                                     'INPUT': '#004EA1',
+                                     'TEXT_INPUT': '#FFFFFF',
+                                     'SCROLL': '#5EA7FF',
+                                     'BUTTON': ('#FFFFFF', '#0079D3'),  # based on Reddit color
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 0, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'ACCENT1': '#FF0266',
+                                     'ACCENT2': '#FF5C93',
+                                     'ACCENT3': '#C5003C'},
+
+                       'Reddit': {'BACKGROUND': '#ffffff',
+                                  'TEXT': '#1a1a1b',
+                                  'INPUT': '#dae0e6',
+                                  'TEXT_INPUT': '#222222',
+                                  'SCROLL': '#a5a4a4',
+                                  'BUTTON': ('white', '#0079d3'),
+                                  'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                  'BORDER': 1,
+                                  'SLIDER_DEPTH': 0,
+                                  'PROGRESS_DEPTH': 0,
+                                  'ACCENT1': '#ff5414',
+                                  'ACCENT2': '#33a8ff',
+                                  'ACCENT3': '#dbf0ff'},
+
+                       'Topanga': {'BACKGROUND': '#282923',
+                                   'TEXT': '#E7DB74',
+                                   'INPUT': '#393a32',
+                                   'TEXT_INPUT': '#E7C855',
+                                   'SCROLL': '#E7C855',
+                                   'BUTTON': ('#E7C855', '#284B5A'),
+                                   'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                   'BORDER': 1,
+                                   'SLIDER_DEPTH': 0,
+                                   'PROGRESS_DEPTH': 0,
+                                   'ACCENT1': '#c15226',
+                                   'ACCENT2': '#7a4d5f',
+                                   'ACCENT3': '#889743'},
+
+                       'GreenTan': {'BACKGROUND': '#9FB8AD',
+                                    'TEXT': COLOR_SYSTEM_DEFAULT,
+                                    'INPUT': '#F7F3EC', 'TEXT_INPUT': 'black',
+                                    'SCROLL': '#F7F3EC',
+                                    'BUTTON': ('white', '#475841'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                    'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0},
+
+                       'Dark': {'BACKGROUND': '#404040',
+                                'TEXT': 'white',
+                                'INPUT': '#4D4D4D',
+                                'TEXT_INPUT': 'white',
+                                'SCROLL': '#707070',
+                                'BUTTON': ('white', '#004F00'),
+                                'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                'BORDER': 1,
+                                'SLIDER_DEPTH': 0,
+                                'PROGRESS_DEPTH': 0},
+
+                       'LightGreen': {'BACKGROUND': '#B7CECE',
+                                      'TEXT': 'black',
+                                      'INPUT': '#FDFFF7',
+                                      'TEXT_INPUT': 'black',
+                                      'SCROLL': '#FDFFF7',
+                                      'BUTTON': ('white', '#658268'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'ACCENT1': '#76506d',
+                                      'ACCENT2': '#5148f1',
+                                      'ACCENT3': '#0a1c84',
+                                      'PROGRESS_DEPTH': 0},
+
+                       'Dark2': {'BACKGROUND': '#404040',
+                                 'TEXT': 'white',
+                                 'INPUT': 'white',
+                                 'TEXT_INPUT': 'black',
+                                 'SCROLL': '#707070',
+                                 'BUTTON': ('white', '#004F00'),
+                                 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                 'BORDER': 1,
+                                 'SLIDER_DEPTH': 0,
+                                 'PROGRESS_DEPTH': 0},
+
+                       'Black': {'BACKGROUND': 'black',
+                                 'TEXT': 'white',
+                                 'INPUT': '#4D4D4D',
+                                 'TEXT_INPUT': 'white',
+                                 'SCROLL': '#707070',
+                                 'BUTTON': ('black', 'white'),
+                                 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                 'BORDER': 1,
+                                 'SLIDER_DEPTH': 0,
+                                 'PROGRESS_DEPTH': 0},
+
+                       'Tan': {'BACKGROUND': '#fdf6e3',
+                               'TEXT': '#268bd1',
+                               'INPUT': '#eee8d5',
+                               'TEXT_INPUT': '#6c71c3',
+                               'SCROLL': '#eee8d5',
+                               'BUTTON': ('white', '#063542'),
+                               'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                               'BORDER': 1,
+                               'SLIDER_DEPTH': 0,
+                               'PROGRESS_DEPTH': 0},
+
+                       'TanBlue': {'BACKGROUND': '#e5dece',
+                                   'TEXT': '#063289',
+                                   'INPUT': '#f9f8f4',
+                                   'TEXT_INPUT': '#242834',
+                                   'SCROLL': '#eee8d5',
+                                   'BUTTON': ('white', '#063289'),
+                                   'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                   'BORDER': 1,
+                                   'SLIDER_DEPTH': 0,
+                                   'PROGRESS_DEPTH': 0},
+
+                       'DarkTanBlue': {'BACKGROUND': '#242834',
+                                       'TEXT': '#dfe6f8',
+                                       'INPUT': '#97755c',
+                                       'TEXT_INPUT': 'white',
+                                       'SCROLL': '#a9afbb',
+                                       'BUTTON': ('white', '#063289'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'DarkAmber': {'BACKGROUND': '#2c2825',
+                                     'TEXT': '#fdcb52',
+                                     'INPUT': '#705e52',
+                                     'TEXT_INPUT': '#fdcb52',
+                                     'SCROLL': '#705e52',
+                                     'BUTTON': ('black', '#fdcb52'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'DarkBlue': {'BACKGROUND': '#1a2835',
+                                    'TEXT': '#d1ecff',
+                                    'INPUT': '#335267',
+                                    'TEXT_INPUT': '#acc2d0',
+                                    'SCROLL': '#1b6497',
+                                    'BUTTON': ('black', '#fafaf8'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                    'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0},
+
+                       'Reds': {'BACKGROUND': '#280001',
+                                'TEXT': 'white',
+                                'INPUT': '#d8d584',
+                                'TEXT_INPUT': 'black',
+                                'SCROLL': '#763e00',
+                                'BUTTON': ('black', '#daad28'),
+                                'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                'BORDER': 1,
+                                'SLIDER_DEPTH': 0,
+                                'PROGRESS_DEPTH': 0},
+
+                       'Green': {'BACKGROUND': '#82a459',
+                                 'TEXT': 'black',
+                                 'INPUT': '#d8d584',
+                                 'TEXT_INPUT': 'black',
+                                 'SCROLL': '#e3ecf3',
+                                 'BUTTON': ('white', '#517239'),
+                                 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                 'BORDER': 1,
+                                 'SLIDER_DEPTH': 0,
+                                 'PROGRESS_DEPTH': 0},
+
+                       'BluePurple': {'BACKGROUND': '#A5CADD',
+                                      'TEXT': '#6E266E',
+                                      'INPUT': '#E0F5FF',
+                                      'TEXT_INPUT': 'black',
+                                      'SCROLL': '#E0F5FF',
+                                      'BUTTON': ('white', '#303952'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'Purple': {'BACKGROUND': '#B0AAC2',
+                                  'TEXT': 'black',
+                                  'INPUT': '#F2EFE8',
+                                  'SCROLL': '#F2EFE8',
+                                  'TEXT_INPUT': 'black',
+                                  'BUTTON': ('black', '#C2D4D8'),
+                                  'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                  'BORDER': 1,
+                                  'SLIDER_DEPTH': 0,
+                                  'PROGRESS_DEPTH': 0},
+
+                       'BlueMono': {'BACKGROUND': '#AAB6D3',
+                                    'TEXT': 'black',
+                                    'INPUT': '#F1F4FC',
+                                    'SCROLL': '#F1F4FC',
+                                    'TEXT_INPUT': 'black',
+                                    'BUTTON': ('white', '#7186C7'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                    'BORDER': 1,
+                                    'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0},
+
+                       'GreenMono': {'BACKGROUND': '#A8C1B4',
+                                     'TEXT': 'black',
+                                     'INPUT': '#DDE0DE',
+                                     'SCROLL': '#E3E3E3',
+                                     'TEXT_INPUT': 'black',
+                                     'BUTTON': ('white', '#6D9F85'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'BrownBlue': {'BACKGROUND': '#64778d',
+                                     'TEXT': 'white',
+                                     'INPUT': '#f0f3f7',
+                                     'SCROLL': '#A6B2BE',
+                                     'TEXT_INPUT': 'black',
+                                     'BUTTON': ('white', '#283b5b'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'BrightColors': {'BACKGROUND': '#b4ffb4',
+                                        'TEXT': 'black',
+                                        'INPUT': '#ffff64',
+                                        'SCROLL': '#ffb482',
+                                        'TEXT_INPUT': 'black',
+                                        'BUTTON': ('black', '#ffa0dc'),
+                                        'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                        'BORDER': 1,
+                                        'SLIDER_DEPTH': 0,
+                                        'PROGRESS_DEPTH': 0},
+
+                       'NeutralBlue': {'BACKGROUND': '#92aa9d',
+                                       'TEXT': 'black',
+                                       'INPUT': '#fcfff6',
+                                       'SCROLL': '#fcfff6',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('black', '#d0dbbd'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'Kayak': {'BACKGROUND': '#a7ad7f',
+                                 'TEXT': 'black',
+                                 'INPUT': '#e6d3a8',
+                                 'SCROLL': '#e6d3a8',
+                                 'TEXT_INPUT': 'black',
+                                 'BUTTON': ('white', '#5d907d'),
+                                 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                 'BORDER': 1,
+                                 'SLIDER_DEPTH': 0,
+                                 'PROGRESS_DEPTH': 0},
+
+                       'SandyBeach': {'BACKGROUND': '#efeccb',
+                                      'TEXT': '#012f2f',
+                                      'INPUT': '#e6d3a8',
+                                      'SCROLL': '#e6d3a8',
+                                      'TEXT_INPUT': '#012f2f',
+                                      'BUTTON': ('white', '#046380'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'TealMono': {'BACKGROUND': '#a8cfdd',
+                                    'TEXT': 'black',
+                                    'INPUT': '#dfedf2',
+                                    'SCROLL': '#dfedf2',
+                                    'TEXT_INPUT': 'black',
+                                    'BUTTON': ('white', '#183440'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                    'BORDER': 1,
+                                    'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0},
+                       ################################## Renamed Original Themes ##################################
+                       'Default':  # plain gray but blue buttons
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
+
+                       'Default1':  # everything is gray
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': COLOR_SYSTEM_DEFAULT,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
+
+                       'DefaultNoMoreNagging':  # a duplicate of "Default" for users that are tired of the nag screen
+                           {'BACKGROUND': COLOR_SYSTEM_DEFAULT,
+                            'TEXT': COLOR_SYSTEM_DEFAULT,
+                            'INPUT': COLOR_SYSTEM_DEFAULT,
+                            'TEXT_INPUT': COLOR_SYSTEM_DEFAULT,
+                            'SCROLL': COLOR_SYSTEM_DEFAULT,
+                            'BUTTON': OFFICIAL_PYSIMPLEGUI_BUTTON_COLOR,
+                            'PROGRESS': COLOR_SYSTEM_DEFAULT,
+                            'BORDER': 1, 'SLIDER_DEPTH': 1,
+                            'PROGRESS_DEPTH': 0},
+
+                       'LightBlue': {'BACKGROUND': '#E3F2FD',
+                                     'TEXT': '#000000',
+                                     'INPUT': '#86A8FF',
+                                     'TEXT_INPUT': '#000000',
+                                     'SCROLL': '#86A8FF',
+                                     'BUTTON': ('#FFFFFF', '#5079D3'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 0, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'ACCENT1': '#FF0266',
+                                     'ACCENT2': '#FF5C93',
+                                     'ACCENT3': '#C5003C'},
+
+                       'LightGrey': {'BACKGROUND': '#FAFAFA',
+                                     'TEXT': '#000000',
+                                     'INPUT': '#004EA1',
+                                     'TEXT_INPUT': '#FFFFFF',
+                                     'SCROLL': '#5EA7FF',
+                                     'BUTTON': ('#FFFFFF', '#0079D3'),  # based on Reddit color
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 0, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'ACCENT1': '#FF0266',
+                                     'ACCENT2': '#FF5C93',
+                                     'ACCENT3': '#C5003C'},
+
+                       'LightGrey1': {'BACKGROUND': '#ffffff',
+                                      'TEXT': '#1a1a1b',
+                                      'INPUT': '#dae0e6',
+                                      'TEXT_INPUT': '#222222',
+                                      'SCROLL': '#a5a4a4',
+                                      'BUTTON': ('white', '#0079d3'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0,
+                                      'ACCENT1': '#ff5414',
+                                      'ACCENT2': '#33a8ff',
+                                      'ACCENT3': '#dbf0ff'},
+
+                       'DarkBrown': {'BACKGROUND': '#282923',
+                                     'TEXT': '#E7DB74',
+                                     'INPUT': '#393a32',
+                                     'TEXT_INPUT': '#E7C855',
+                                     'SCROLL': '#E7C855',
+                                     'BUTTON': ('#E7C855', '#284B5A'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'ACCENT1': '#c15226',
+                                     'ACCENT2': '#7a4d5f',
+                                     'ACCENT3': '#889743'},
+
+                       'LightGreen1': {'BACKGROUND': '#9FB8AD',
+                                       'TEXT': COLOR_SYSTEM_DEFAULT,
+                                       'INPUT': '#F7F3EC', 'TEXT_INPUT': 'black',
+                                       'SCROLL': '#F7F3EC',
+                                       'BUTTON': ('white', '#475841'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'DarkGrey': {'BACKGROUND': '#404040',
+                                    'TEXT': 'white',
+                                    'INPUT': '#4D4D4D',
+                                    'TEXT_INPUT': 'white',
+                                    'SCROLL': '#707070',
+                                    'BUTTON': ('white', '#004F00'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                    'BORDER': 1,
+                                    'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0},
+
+                       'LightGreen2': {'BACKGROUND': '#B7CECE',
+                                       'TEXT': 'black',
+                                       'INPUT': '#FDFFF7',
+                                       'TEXT_INPUT': 'black',
+                                       'SCROLL': '#FDFFF7',
+                                       'BUTTON': ('white', '#658268'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'ACCENT1': '#76506d',
+                                       'ACCENT2': '#5148f1',
+                                       'ACCENT3': '#0a1c84',
+                                       'PROGRESS_DEPTH': 0},
+
+                       'DarkGrey1': {'BACKGROUND': '#404040',
+                                     'TEXT': 'white',
+                                     'INPUT': 'white',
+                                     'TEXT_INPUT': 'black',
+                                     'SCROLL': '#707070',
+                                     'BUTTON': ('white', '#004F00'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'DarkBlack': {'BACKGROUND': 'black',
+                                     'TEXT': 'white',
+                                     'INPUT': '#4D4D4D',
+                                     'TEXT_INPUT': 'white',
+                                     'SCROLL': '#707070',
+                                     'BUTTON': ('black', 'white'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'LightBrown': {'BACKGROUND': '#fdf6e3',
+                                      'TEXT': '#268bd1',
+                                      'INPUT': '#eee8d5',
+                                      'TEXT_INPUT': '#6c71c3',
+                                      'SCROLL': '#eee8d5',
+                                      'BUTTON': ('white', '#063542'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'LightBrown1': {'BACKGROUND': '#e5dece',
+                                       'TEXT': '#063289',
+                                       'INPUT': '#f9f8f4',
+                                       'TEXT_INPUT': '#242834',
+                                       'SCROLL': '#eee8d5',
+                                       'BUTTON': ('white', '#063289'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'DarkBlue1': {'BACKGROUND': '#242834',
+                                     'TEXT': '#dfe6f8',
+                                     'INPUT': '#97755c',
+                                     'TEXT_INPUT': 'white',
+                                     'SCROLL': '#a9afbb',
+                                     'BUTTON': ('white', '#063289'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'DarkBrown1': {'BACKGROUND': '#2c2825',
+                                      'TEXT': '#fdcb52',
+                                      'INPUT': '#705e52',
+                                      'TEXT_INPUT': '#fdcb52',
+                                      'SCROLL': '#705e52',
+                                      'BUTTON': ('black', '#fdcb52'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'DarkBlue2': {'BACKGROUND': '#1a2835',
+                                     'TEXT': '#d1ecff',
+                                     'INPUT': '#335267',
+                                     'TEXT_INPUT': '#acc2d0',
+                                     'SCROLL': '#1b6497',
+                                     'BUTTON': ('black', '#fafaf8'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'DarkBrown2': {'BACKGROUND': '#280001',
+                                      'TEXT': 'white',
+                                      'INPUT': '#d8d584',
+                                      'TEXT_INPUT': 'black',
+                                      'SCROLL': '#763e00',
+                                      'BUTTON': ('black', '#daad28'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'DarkGreen': {'BACKGROUND': '#82a459',
+                                     'TEXT': 'black',
+                                     'INPUT': '#d8d584',
+                                     'TEXT_INPUT': 'black',
+                                     'SCROLL': '#e3ecf3',
+                                     'BUTTON': ('white', '#517239'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'LightBlue1': {'BACKGROUND': '#A5CADD',
+                                      'TEXT': '#6E266E',
+                                      'INPUT': '#E0F5FF',
+                                      'TEXT_INPUT': 'black',
+                                      'SCROLL': '#E0F5FF',
+                                      'BUTTON': ('white', '#303952'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'LightPurple': {'BACKGROUND': '#B0AAC2',
+                                       'TEXT': 'black',
+                                       'INPUT': '#F2EFE8',
+                                       'SCROLL': '#F2EFE8',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('black', '#C2D4D8'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'LightBlue2': {'BACKGROUND': '#AAB6D3',
+                                      'TEXT': 'black',
+                                      'INPUT': '#F1F4FC',
+                                      'SCROLL': '#F1F4FC',
+                                      'TEXT_INPUT': 'black',
+                                      'BUTTON': ('white', '#7186C7'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       'LightGreen3': {'BACKGROUND': '#A8C1B4',
+                                       'TEXT': 'black',
+                                       'INPUT': '#DDE0DE',
+                                       'SCROLL': '#E3E3E3',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('white', '#6D9F85'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'DarkBlue3': {'BACKGROUND': '#64778d',
+                                     'TEXT': 'white',
+                                     'INPUT': '#f0f3f7',
+                                     'SCROLL': '#A6B2BE',
+                                     'TEXT_INPUT': 'black',
+                                     'BUTTON': ('white', '#283b5b'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                     'BORDER': 1,
+                                     'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0},
+
+                       'LightGreen4': {'BACKGROUND': '#b4ffb4',
+                                       'TEXT': 'black',
+                                       'INPUT': '#ffff64',
+                                       'SCROLL': '#ffb482',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('black', '#ffa0dc'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'LightGreen5': {'BACKGROUND': '#92aa9d',
+                                       'TEXT': 'black',
+                                       'INPUT': '#fcfff6',
+                                       'SCROLL': '#fcfff6',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('black', '#d0dbbd'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'LightBrown2': {'BACKGROUND': '#a7ad7f',
+                                       'TEXT': 'black',
+                                       'INPUT': '#e6d3a8',
+                                       'SCROLL': '#e6d3a8',
+                                       'TEXT_INPUT': 'black',
+                                       'BUTTON': ('white', '#5d907d'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1,
+                                       'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'LightBrown3': {'BACKGROUND': '#efeccb',
+                                       'TEXT': '#012f2f',
+                                       'INPUT': '#e6d3a8',
+                                       'SCROLL': '#e6d3a8',
+                                       'TEXT_INPUT': '#012f2f',
+                                       'BUTTON': ('white', '#046380'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                       'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0},
+
+                       'LightBlue3': {'BACKGROUND': '#a8cfdd',
+                                      'TEXT': 'black',
+                                      'INPUT': '#dfedf2',
+                                      'SCROLL': '#dfedf2',
+                                      'TEXT_INPUT': 'black',
+                                      'BUTTON': ('white', '#183440'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR,
+                                      'BORDER': 1,
+                                      'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0},
+
+                       ################################## End Renamed Original Themes ##################################
+
+                       #
+                       'LightBrown4': {'BACKGROUND': '#d7c79e', 'TEXT': '#a35638', 'INPUT': '#9dab86', 'TEXT_INPUT': '#000000', 'SCROLL': '#a35638',
+                                       'BUTTON': ('white', '#a35638'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#a35638', '#9dab86', '#e08f62', '#d7c79e'], },
+                       'DarkTeal': {'BACKGROUND': '#003f5c', 'TEXT': '#fb5b5a', 'INPUT': '#bc4873', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#bc4873',
+                                    'BUTTON': ('white', '#fb5b5a'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                    'COLOR_LIST': ['#003f5c', '#472b62', '#bc4873', '#fb5b5a'], },
+                       'DarkPurple': {'BACKGROUND': '#472b62', 'TEXT': '#fb5b5a', 'INPUT': '#bc4873', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#bc4873',
+                                      'BUTTON': ('#FFFFFF', '#472b62'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#003f5c', '#472b62', '#bc4873', '#fb5b5a'], },
+                       'LightGreen6': {'BACKGROUND': '#eafbea', 'TEXT': '#1f6650', 'INPUT': '#6f9a8d', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#1f6650',
+                                       'BUTTON': ('white', '#1f6650'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#1f6650', '#6f9a8d', '#ea5e5e', '#eafbea'], },
+                       'DarkGrey2': {'BACKGROUND': '#2b2b28', 'TEXT': '#f8f8f8', 'INPUT': '#f1d6ab', 'TEXT_INPUT': '#000000', 'SCROLL': '#f1d6ab',
+                                     'BUTTON': ('#2b2b28', '#e3b04b'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#2b2b28', '#e3b04b', '#f1d6ab', '#f8f8f8'], },
+                       'LightBrown6': {'BACKGROUND': '#f9b282', 'TEXT': '#8f4426', 'INPUT': '#de6b35', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#8f4426',
+                                       'BUTTON': ('white', '#8f4426'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#8f4426', '#de6b35', '#64ccda', '#f9b282'], },
+                       'DarkTeal1': {'BACKGROUND': '#396362', 'TEXT': '#ffe7d1', 'INPUT': '#f6c89f', 'TEXT_INPUT': '#000000', 'SCROLL': '#f6c89f',
+                                     'BUTTON': ('#ffe7d1', '#4b8e8d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#396362', '#4b8e8d', '#f6c89f', '#ffe7d1'], },
+                       'LightBrown7': {'BACKGROUND': '#f6c89f', 'TEXT': '#396362', 'INPUT': '#4b8e8d', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#396362',
+                                       'BUTTON': ('white', '#396362'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#396362', '#4b8e8d', '#f6c89f', '#ffe7d1'], },
+                       'DarkPurple1': {'BACKGROUND': '#0c093c', 'TEXT': '#fad6d6', 'INPUT': '#eea5f6', 'TEXT_INPUT': '#000000', 'SCROLL': '#eea5f6',
+                                       'BUTTON': ('#FFFFFF', '#df42d1'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#0c093c', '#df42d1', '#eea5f6', '#fad6d6'], },
+                       'DarkGrey3': {'BACKGROUND': '#211717', 'TEXT': '#dfddc7', 'INPUT': '#f58b54', 'TEXT_INPUT': '#000000', 'SCROLL': '#f58b54',
+                                     'BUTTON': ('#dfddc7', '#a34a28'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#211717', '#a34a28', '#f58b54', '#dfddc7'], },
+                       'LightBrown8': {'BACKGROUND': '#dfddc7', 'TEXT': '#211717', 'INPUT': '#a34a28', 'TEXT_INPUT': '#dfddc7', 'SCROLL': '#211717',
+                                       'BUTTON': ('#dfddc7', '#a34a28'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#211717', '#a34a28', '#f58b54', '#dfddc7'], },
+                       'DarkBlue4': {'BACKGROUND': '#494ca2', 'TEXT': '#e3e7f1', 'INPUT': '#c6cbef', 'TEXT_INPUT': '#000000', 'SCROLL': '#c6cbef',
+                                     'BUTTON': ('#FFFFFF', '#8186d5'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#494ca2', '#8186d5', '#c6cbef', '#e3e7f1'], },
+                       'LightBlue4': {'BACKGROUND': '#5c94bd', 'TEXT': '#470938', 'INPUT': '#1a3e59', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#470938',
+                                      'BUTTON': ('white', '#470938'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#470938', '#1a3e59', '#5c94bd', '#f2d6eb'], },
+                       'DarkTeal2': {'BACKGROUND': '#394a6d', 'TEXT': '#c0ffb3', 'INPUT': '#52de97', 'TEXT_INPUT': '#000000', 'SCROLL': '#52de97',
+                                     'BUTTON': ('#c0ffb3', '#394a6d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#394a6d', '#3c9d9b', '#52de97', '#c0ffb3'], },
+                       'DarkTeal3': {'BACKGROUND': '#3c9d9b', 'TEXT': '#c0ffb3', 'INPUT': '#52de97', 'TEXT_INPUT': '#000000', 'SCROLL': '#52de97',
+                                     'BUTTON': ('#c0ffb3', '#394a6d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#394a6d', '#3c9d9b', '#52de97', '#c0ffb3'], },
+                       'DarkPurple5': {'BACKGROUND': '#730068', 'TEXT': '#f6f078', 'INPUT': '#01d28e', 'TEXT_INPUT': '#000000', 'SCROLL': '#01d28e',
+                                       'BUTTON': ('#f6f078', '#730068'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#730068', '#434982', '#01d28e', '#f6f078'], },
+                       'DarkPurple2': {'BACKGROUND': '#202060', 'TEXT': '#b030b0', 'INPUT': '#602080', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#602080',
+                                       'BUTTON': ('white', '#202040'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#202040', '#202060', '#602080', '#b030b0'], },
+                       'DarkBlue5': {'BACKGROUND': '#000272', 'TEXT': '#ff6363', 'INPUT': '#a32f80', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#a32f80',
+                                     'BUTTON': ('#FFFFFF', '#341677'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#000272', '#341677', '#a32f80', '#ff6363'], },
+                       'LightGrey2': {'BACKGROUND': '#f6f6f6', 'TEXT': '#420000', 'INPUT': '#d4d7dd', 'TEXT_INPUT': '#420000', 'SCROLL': '#420000',
+                                      'BUTTON': ('#420000', '#d4d7dd'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#420000', '#d4d7dd', '#eae9e9', '#f6f6f6'], },
+                       'LightGrey3': {'BACKGROUND': '#eae9e9', 'TEXT': '#420000', 'INPUT': '#d4d7dd', 'TEXT_INPUT': '#420000', 'SCROLL': '#420000',
+                                      'BUTTON': ('#420000', '#d4d7dd'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#420000', '#d4d7dd', '#eae9e9', '#f6f6f6'], },
+                       'DarkBlue6': {'BACKGROUND': '#01024e', 'TEXT': '#ff6464', 'INPUT': '#8b4367', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#8b4367',
+                                     'BUTTON': ('#FFFFFF', '#543864'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#01024e', '#543864', '#8b4367', '#ff6464'], },
+                       'DarkBlue7': {'BACKGROUND': '#241663', 'TEXT': '#eae7af', 'INPUT': '#a72693', 'TEXT_INPUT': '#eae7af', 'SCROLL': '#a72693',
+                                     'BUTTON': ('#eae7af', '#160f30'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#160f30', '#241663', '#a72693', '#eae7af'], },
+                       'LightBrown9': {'BACKGROUND': '#f6d365', 'TEXT': '#3a1f5d', 'INPUT': '#c83660', 'TEXT_INPUT': '#f6d365', 'SCROLL': '#3a1f5d',
+                                       'BUTTON': ('#f6d365', '#c83660'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#3a1f5d', '#c83660', '#e15249', '#f6d365'], },
+                       'DarkPurple3': {'BACKGROUND': '#6e2142', 'TEXT': '#ffd692', 'INPUT': '#e16363', 'TEXT_INPUT': '#ffd692', 'SCROLL': '#e16363',
+                                       'BUTTON': ('#ffd692', '#943855'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#6e2142', '#943855', '#e16363', '#ffd692'], },
+                       'LightBrown10': {'BACKGROUND': '#ffd692', 'TEXT': '#6e2142', 'INPUT': '#943855', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#6e2142',
+                                        'BUTTON': ('white', '#6e2142'),
+                                        'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                        'COLOR_LIST': ['#6e2142', '#943855', '#e16363', '#ffd692'], },
+                       'DarkPurple4': {'BACKGROUND': '#200f21', 'TEXT': '#f638dc', 'INPUT': '#5a3d5c', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#5a3d5c',
+                                       'BUTTON': ('#FFFFFF', '#382039'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#200f21', '#382039', '#5a3d5c', '#f638dc'], },
+                       'LightBlue5': {'BACKGROUND': '#b2fcff', 'TEXT': '#3e64ff', 'INPUT': '#5edfff', 'TEXT_INPUT': '#000000', 'SCROLL': '#3e64ff',
+                                      'BUTTON': ('white', '#3e64ff'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#3e64ff', '#5edfff', '#b2fcff', '#ecfcff'], },
+                       'DarkTeal4': {'BACKGROUND': '#464159', 'TEXT': '#c7f0db', 'INPUT': '#8bbabb', 'TEXT_INPUT': '#000000', 'SCROLL': '#8bbabb',
+                                     'BUTTON': ('#FFFFFF', '#6c7b95'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#464159', '#6c7b95', '#8bbabb', '#c7f0db'], },
+                       'LightTeal': {'BACKGROUND': '#c7f0db', 'TEXT': '#464159', 'INPUT': '#6c7b95', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#464159',
+                                     'BUTTON': ('white', '#464159'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#464159', '#6c7b95', '#8bbabb', '#c7f0db'], },
+                       'DarkTeal5': {'BACKGROUND': '#8bbabb', 'TEXT': '#464159', 'INPUT': '#6c7b95', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#464159',
+                                     'BUTTON': ('#c7f0db', '#6c7b95'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#464159', '#6c7b95', '#8bbabb', '#c7f0db'], },
+                       'LightGrey4': {'BACKGROUND': '#faf5ef', 'TEXT': '#672f2f', 'INPUT': '#99b19c', 'TEXT_INPUT': '#672f2f', 'SCROLL': '#672f2f',
+                                      'BUTTON': ('#672f2f', '#99b19c'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#672f2f', '#99b19c', '#d7d1c9', '#faf5ef'], },
+                       'LightGreen7': {'BACKGROUND': '#99b19c', 'TEXT': '#faf5ef', 'INPUT': '#d7d1c9', 'TEXT_INPUT': '#000000', 'SCROLL': '#d7d1c9',
+                                       'BUTTON': ('#FFFFFF', '#99b19c'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#672f2f', '#99b19c', '#d7d1c9', '#faf5ef'], },
+                       'LightGrey5': {'BACKGROUND': '#d7d1c9', 'TEXT': '#672f2f', 'INPUT': '#99b19c', 'TEXT_INPUT': '#672f2f', 'SCROLL': '#672f2f',
+                                      'BUTTON': ('white', '#672f2f'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#672f2f', '#99b19c', '#d7d1c9', '#faf5ef'], },
+                       'DarkBrown3': {'BACKGROUND': '#a0855b', 'TEXT': '#f9f6f2', 'INPUT': '#f1d6ab', 'TEXT_INPUT': '#000000', 'SCROLL': '#f1d6ab',
+                                      'BUTTON': ('white', '#38470b'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#38470b', '#a0855b', '#f1d6ab', '#f9f6f2'], },
+                       'LightBrown11': {'BACKGROUND': '#f1d6ab', 'TEXT': '#38470b', 'INPUT': '#a0855b', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#38470b',
+                                        'BUTTON': ('#f9f6f2', '#a0855b'),
+                                        'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                        'COLOR_LIST': ['#38470b', '#a0855b', '#f1d6ab', '#f9f6f2'], },
+                       'DarkRed': {'BACKGROUND': '#83142c', 'TEXT': '#f9d276', 'INPUT': '#ad1d45', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#ad1d45',
+                                   'BUTTON': ('#f9d276', '#ad1d45'),
+                                   'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                   'COLOR_LIST': ['#44000d', '#83142c', '#ad1d45', '#f9d276'], },
+                       'DarkTeal6': {'BACKGROUND': '#204969', 'TEXT': '#fff7f7', 'INPUT': '#dadada', 'TEXT_INPUT': '#000000', 'SCROLL': '#dadada',
+                                     'BUTTON': ('black', '#fff7f7'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#204969', '#08ffc8', '#dadada', '#fff7f7'], },
+                       'DarkBrown4': {'BACKGROUND': '#252525', 'TEXT': '#ff0000', 'INPUT': '#af0404', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#af0404',
+                                      'BUTTON': ('white', '#252525'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#252525', '#414141', '#af0404', '#ff0000'], },
+                       'LightYellow': {'BACKGROUND': '#f4ff61', 'TEXT': '#27aa80', 'INPUT': '#32ff6a', 'TEXT_INPUT': '#000000', 'SCROLL': '#27aa80',
+                                       'BUTTON': ('#f4ff61', '#27aa80'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#27aa80', '#32ff6a', '#a8ff3e', '#f4ff61'], },
+                       'DarkGreen1': {'BACKGROUND': '#2b580c', 'TEXT': '#fdef96', 'INPUT': '#f7b71d', 'TEXT_INPUT': '#000000', 'SCROLL': '#f7b71d',
+                                      'BUTTON': ('#fdef96', '#2b580c'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#2b580c', '#afa939', '#f7b71d', '#fdef96'], },
+
+                       'LightGreen8': {'BACKGROUND': '#c8dad3', 'TEXT': '#63707e', 'INPUT': '#93b5b3', 'TEXT_INPUT': '#000000', 'SCROLL': '#63707e',
+                                       'BUTTON': ('white', '#63707e'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#63707e', '#93b5b3', '#c8dad3', '#f2f6f5'], },
+
+                       'DarkTeal7': {'BACKGROUND': '#248ea9', 'TEXT': '#fafdcb', 'INPUT': '#aee7e8', 'TEXT_INPUT': '#000000', 'SCROLL': '#aee7e8',
+                                     'BUTTON': ('black', '#fafdcb'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#248ea9', '#28c3d4', '#aee7e8', '#fafdcb'], },
+                       'DarkBlue8': {'BACKGROUND': '#454d66', 'TEXT': '#d9d872', 'INPUT': '#58b368', 'TEXT_INPUT': '#000000', 'SCROLL': '#58b368',
+                                     'BUTTON': ('black', '#009975'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#009975', '#454d66', '#58b368', '#d9d872'], },
+                       'DarkBlue9': {'BACKGROUND': '#263859', 'TEXT': '#ff6768', 'INPUT': '#6b778d', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#6b778d',
+                                     'BUTTON': ('#ff6768', '#263859'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#17223b', '#263859', '#6b778d', '#ff6768'], },
+                       'DarkBlue10': {'BACKGROUND': '#0028ff', 'TEXT': '#f1f4df', 'INPUT': '#10eaf0', 'TEXT_INPUT': '#000000', 'SCROLL': '#10eaf0',
+                                      'BUTTON': ('#f1f4df', '#24009c'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#24009c', '#0028ff', '#10eaf0', '#f1f4df'], },
+                       'DarkBlue11': {'BACKGROUND': '#6384b3', 'TEXT': '#e6f0b6', 'INPUT': '#b8e9c0', 'TEXT_INPUT': '#000000', 'SCROLL': '#b8e9c0',
+                                      'BUTTON': ('#e6f0b6', '#684949'),
+                                      'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#684949', '#6384b3', '#b8e9c0', '#e6f0b6'], },
+
+                       'DarkTeal8': {'BACKGROUND': '#71a0a5', 'TEXT': '#212121', 'INPUT': '#665c84', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#212121',
+                                     'BUTTON': ('#fab95b', '#665c84'),
+                                     'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                     'COLOR_LIST': ['#212121', '#665c84', '#71a0a5', '#fab95b']},
+                       'DarkRed1': {'BACKGROUND': '#c10000', 'TEXT': '#eeeeee', 'INPUT': '#dedede', 'TEXT_INPUT': '#000000', 'SCROLL': '#dedede',
+                                    'BUTTON': ('#c10000', '#eeeeee'),
+                                    'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                    'COLOR_LIST': ['#c10000', '#ff4949', '#dedede', '#eeeeee'], },
+                       'LightBrown5': {'BACKGROUND': '#fff591', 'TEXT': '#e41749', 'INPUT': '#f5587b', 'TEXT_INPUT': '#000000', 'SCROLL': '#e41749',
+                                       'BUTTON': ('#fff591', '#e41749'),
+                                       'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#e41749', '#f5587b', '#ff8a5c', '#fff591']},
+                       'LightGreen9': {'BACKGROUND': '#f1edb3', 'TEXT': '#3b503d', 'INPUT': '#4a746e', 'TEXT_INPUT': '#f1edb3', 'SCROLL': '#3b503d',
+                                       'BUTTON': ('#f1edb3', '#3b503d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0,
+                                       'COLOR_LIST': ['#3b503d', '#4a746e', '#c8cf94', '#f1edb3'], 'DESCRIPTION': ['Green', 'Turquoise', 'Yellow']},
+                       'DarkGreen2': {'BACKGROUND': '#3b503d', 'TEXT': '#f1edb3', 'INPUT': '#c8cf94', 'TEXT_INPUT': '#000000', 'SCROLL': '#c8cf94',
+                                      'BUTTON': ('#f1edb3', '#3b503d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0,
+                                      'COLOR_LIST': ['#3b503d', '#4a746e', '#c8cf94', '#f1edb3'], 'DESCRIPTION': ['Green', 'Turquoise', 'Yellow']},
+                       'LightGray1': {'BACKGROUND': '#f2f2f2', 'TEXT': '#222831', 'INPUT': '#393e46', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#222831',
+                                      'BUTTON': ('#f2f2f2', '#222831'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#222831', '#393e46', '#f96d00', '#f2f2f2'],
+                                      'DESCRIPTION': ['Black', 'Grey', 'Orange', 'Grey', 'Autumn']},
+                       'DarkGrey4': {'BACKGROUND': '#52524e', 'TEXT': '#e9e9e5', 'INPUT': '#d4d6c8', 'TEXT_INPUT': '#000000', 'SCROLL': '#d4d6c8',
+                                     'BUTTON': ('#FFFFFF', '#9a9b94'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#52524e', '#9a9b94', '#d4d6c8', '#e9e9e5'],
+                                     'DESCRIPTION': ['Grey', 'Pastel', 'Winter']},
+                       'DarkBlue12': {'BACKGROUND': '#324e7b', 'TEXT': '#f8f8f8', 'INPUT': '#86a6df', 'TEXT_INPUT': '#000000', 'SCROLL': '#86a6df',
+                                      'BUTTON': ('#FFFFFF', '#5068a9'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#324e7b', '#5068a9', '#86a6df', '#f8f8f8'],
+                                      'DESCRIPTION': ['Blue', 'Grey', 'Cold', 'Winter']},
+                       'DarkPurple6': {'BACKGROUND': '#070739', 'TEXT': '#e1e099', 'INPUT': '#c327ab', 'TEXT_INPUT': '#e1e099', 'SCROLL': '#c327ab',
+                                       'BUTTON': ('#e1e099', '#521477'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                       'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#070739', '#521477', '#c327ab', '#e1e099'],
+                                       'DESCRIPTION': ['Black', 'Purple', 'Yellow', 'Dark']},
+                       'DarkBlue13': {'BACKGROUND': '#203562', 'TEXT': '#e3e8f8', 'INPUT': '#c0c5cd', 'TEXT_INPUT': '#000000', 'SCROLL': '#c0c5cd',
+                                      'BUTTON': ('#FFFFFF', '#3e588f'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#203562', '#3e588f', '#c0c5cd', '#e3e8f8'],
+                                      'DESCRIPTION': ['Blue', 'Grey', 'Wedding', 'Cold']},
+                       'DarkBrown5': {'BACKGROUND': '#3c1b1f', 'TEXT': '#f6e1b5', 'INPUT': '#e2bf81', 'TEXT_INPUT': '#000000', 'SCROLL': '#e2bf81',
+                                      'BUTTON': ('#3c1b1f', '#f6e1b5'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#3c1b1f', '#b21e4b', '#e2bf81', '#f6e1b5'],
+                                      'DESCRIPTION': ['Brown', 'Red', 'Yellow', 'Warm']},
+                       'DarkGreen3': {'BACKGROUND': '#062121', 'TEXT': '#eeeeee', 'INPUT': '#e4dcad', 'TEXT_INPUT': '#000000', 'SCROLL': '#e4dcad',
+                                      'BUTTON': ('#eeeeee', '#181810'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#062121', '#181810', '#e4dcad', '#eeeeee'],
+                                      'DESCRIPTION': ['Black', 'Black', 'Brown', 'Grey']},
+                       'DarkBlack1': {'BACKGROUND': '#181810', 'TEXT': '#eeeeee', 'INPUT': '#e4dcad', 'TEXT_INPUT': '#000000', 'SCROLL': '#e4dcad',
+                                      'BUTTON': ('white', '#062121'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#062121', '#181810', '#e4dcad', '#eeeeee'],
+                                      'DESCRIPTION': ['Black', 'Black', 'Brown', 'Grey']},
+                       'DarkGrey5': {'BACKGROUND': '#343434', 'TEXT': '#f3f3f3', 'INPUT': '#e9dcbe', 'TEXT_INPUT': '#000000', 'SCROLL': '#e9dcbe',
+                                     'BUTTON': ('#FFFFFF', '#8e8b82'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#343434', '#8e8b82', '#e9dcbe', '#f3f3f3'], 'DESCRIPTION': ['Grey', 'Brown']},
+                       'LightBrown12': {'BACKGROUND': '#8e8b82', 'TEXT': '#f3f3f3', 'INPUT': '#e9dcbe', 'TEXT_INPUT': '#000000', 'SCROLL': '#e9dcbe',
+                                        'BUTTON': ('#f3f3f3', '#8e8b82'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                        'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#343434', '#8e8b82', '#e9dcbe', '#f3f3f3'], 'DESCRIPTION': ['Grey', 'Brown']},
+                       'DarkTeal9': {'BACKGROUND': '#13445a', 'TEXT': '#fef4e8', 'INPUT': '#446878', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#446878',
+                                     'BUTTON': ('#fef4e8', '#446878'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#13445a', '#970747', '#446878', '#fef4e8'],
+                                     'DESCRIPTION': ['Red', 'Grey', 'Blue', 'Wedding', 'Retro']},
+                       'DarkBlue14': {'BACKGROUND': '#21273d', 'TEXT': '#f1f6f8', 'INPUT': '#b9d4f1', 'TEXT_INPUT': '#000000', 'SCROLL': '#b9d4f1',
+                                      'BUTTON': ('#FFFFFF', '#6a759b'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#21273d', '#6a759b', '#b9d4f1', '#f1f6f8'],
+                                      'DESCRIPTION': ['Blue', 'Black', 'Grey', 'Cold', 'Winter']},
+                       'LightBlue6': {'BACKGROUND': '#f1f6f8', 'TEXT': '#21273d', 'INPUT': '#6a759b', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#21273d',
+                                      'BUTTON': ('#f1f6f8', '#6a759b'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#21273d', '#6a759b', '#b9d4f1', '#f1f6f8'],
+                                      'DESCRIPTION': ['Blue', 'Black', 'Grey', 'Cold', 'Winter']},
+                       'DarkGreen4': {'BACKGROUND': '#044343', 'TEXT': '#e4e4e4', 'INPUT': '#045757', 'TEXT_INPUT': '#e4e4e4', 'SCROLL': '#045757',
+                                      'BUTTON': ('#e4e4e4', '#045757'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#222222', '#044343', '#045757', '#e4e4e4'],
+                                      'DESCRIPTION': ['Black', 'Turquoise', 'Grey', 'Dark']},
+                       'DarkGreen5': {'BACKGROUND': '#1b4b36', 'TEXT': '#e0e7f1', 'INPUT': '#aebd77', 'TEXT_INPUT': '#000000', 'SCROLL': '#aebd77',
+                                      'BUTTON': ('#FFFFFF', '#538f6a'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#1b4b36', '#538f6a', '#aebd77', '#e0e7f1'], 'DESCRIPTION': ['Green', 'Grey']},
+                       'DarkTeal10': {'BACKGROUND': '#0d3446', 'TEXT': '#d8dfe2', 'INPUT': '#71adb5', 'TEXT_INPUT': '#000000', 'SCROLL': '#71adb5',
+                                      'BUTTON': ('#FFFFFF', '#176d81'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#0d3446', '#176d81', '#71adb5', '#d8dfe2'],
+                                      'DESCRIPTION': ['Grey', 'Turquoise', 'Winter', 'Cold']},
+                       'DarkGrey6': {'BACKGROUND': '#3e3e3e', 'TEXT': '#ededed', 'INPUT': '#68868c', 'TEXT_INPUT': '#ededed', 'SCROLL': '#68868c',
+                                     'BUTTON': ('#FFFFFF', '#405559'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#3e3e3e', '#405559', '#68868c', '#ededed'],
+                                     'DESCRIPTION': ['Grey', 'Turquoise', 'Winter']},
+                       'DarkTeal11': {'BACKGROUND': '#405559', 'TEXT': '#ededed', 'INPUT': '#68868c', 'TEXT_INPUT': '#ededed', 'SCROLL': '#68868c',
+                                      'BUTTON': ('#ededed', '#68868c'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#3e3e3e', '#405559', '#68868c', '#ededed'],
+                                      'DESCRIPTION': ['Grey', 'Turquoise', 'Winter']},
+                       'LightBlue7': {'BACKGROUND': '#9ed0e0', 'TEXT': '#19483f', 'INPUT': '#5c868e', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#19483f',
+                                      'BUTTON': ('white', '#19483f'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#19483f', '#5c868e', '#ff6a38', '#9ed0e0'],
+                                      'DESCRIPTION': ['Orange', 'Blue', 'Turquoise']},
+                       'LightGreen10': {'BACKGROUND': '#d8ebb5', 'TEXT': '#205d67', 'INPUT': '#639a67', 'TEXT_INPUT': '#FFFFFF', 'SCROLL': '#205d67',
+                                        'BUTTON': ('#d8ebb5', '#205d67'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                        'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#205d67', '#639a67', '#d9bf77', '#d8ebb5'],
+                                        'DESCRIPTION': ['Blue', 'Green', 'Brown', 'Vintage']},
+                       'DarkBlue15': {'BACKGROUND': '#151680', 'TEXT': '#f1fea4', 'INPUT': '#375fc0', 'TEXT_INPUT': '#f1fea4', 'SCROLL': '#375fc0',
+                                      'BUTTON': ('#f1fea4', '#1c44ac'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#151680', '#1c44ac', '#375fc0', '#f1fea4'],
+                                      'DESCRIPTION': ['Blue', 'Yellow', 'Cold']},
+                       'DarkBlue16': {'BACKGROUND': '#1c44ac', 'TEXT': '#f1fea4', 'INPUT': '#375fc0', 'TEXT_INPUT': '#f1fea4', 'SCROLL': '#375fc0',
+                                      'BUTTON': ('#f1fea4', '#151680'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#151680', '#1c44ac', '#375fc0', '#f1fea4'],
+                                      'DESCRIPTION': ['Blue', 'Yellow', 'Cold']},
+                       'DarkTeal12': {'BACKGROUND': '#004a7c', 'TEXT': '#fafafa', 'INPUT': '#e8f1f5', 'TEXT_INPUT': '#000000', 'SCROLL': '#e8f1f5',
+                                      'BUTTON': ('#fafafa', '#005691'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#004a7c', '#005691', '#e8f1f5', '#fafafa'],
+                                      'DESCRIPTION': ['Grey', 'Blue', 'Cold', 'Winter']},
+                       'LightBrown13': {'BACKGROUND': '#ebf5ee', 'TEXT': '#921224', 'INPUT': '#bdc6b8', 'TEXT_INPUT': '#921224', 'SCROLL': '#921224',
+                                        'BUTTON': ('white', '#921224'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                        'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#921224', '#bdc6b8', '#bce0da', '#ebf5ee'],
+                                        'DESCRIPTION': ['Red', 'Blue', 'Grey', 'Vintage', 'Wedding']},
+                       'DarkBlue17': {'BACKGROUND': '#21294c', 'TEXT': '#f9f2d7', 'INPUT': '#f2dea8', 'TEXT_INPUT': '#000000', 'SCROLL': '#f2dea8',
+                                      'BUTTON': ('#f9f2d7', '#141829'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#141829', '#21294c', '#f2dea8', '#f9f2d7'],
+                                      'DESCRIPTION': ['Black', 'Blue', 'Yellow']},
+                       'DarkBrown6': {'BACKGROUND': '#785e4d', 'TEXT': '#f2eee3', 'INPUT': '#baaf92', 'TEXT_INPUT': '#000000', 'SCROLL': '#baaf92',
+                                      'BUTTON': ('white', '#785e4d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#785e4d', '#ff8426', '#baaf92', '#f2eee3'],
+                                      'DESCRIPTION': ['Grey', 'Brown', 'Orange', 'Autumn']},
+                       'DarkGreen6': {'BACKGROUND': '#5c715e', 'TEXT': '#f2f9f1', 'INPUT': '#ddeedf', 'TEXT_INPUT': '#000000', 'SCROLL': '#ddeedf',
+                                      'BUTTON': ('#f2f9f1', '#5c715e'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#5c715e', '#b6cdbd', '#ddeedf', '#f2f9f1'],
+                                      'DESCRIPTION': ['Grey', 'Green', 'Vintage']},
+                       'DarkGrey7': {'BACKGROUND': '#4b586e', 'TEXT': '#dddddd', 'INPUT': '#574e6d', 'TEXT_INPUT': '#dddddd', 'SCROLL': '#574e6d',
+                                     'BUTTON': ('#dddddd', '#43405d'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                     'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#43405d', '#4b586e', '#574e6d', '#dddddd'],
+                                     'DESCRIPTION': ['Grey', 'Winter', 'Cold']},
+                       'DarkRed2': {'BACKGROUND': '#ab1212', 'TEXT': '#f6e4b5', 'INPUT': '#cd3131', 'TEXT_INPUT': '#f6e4b5', 'SCROLL': '#cd3131',
+                                    'BUTTON': ('#f6e4b5', '#ab1212'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                    'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#ab1212', '#1fad9f', '#cd3131', '#f6e4b5'],
+                                    'DESCRIPTION': ['Turquoise', 'Red', 'Yellow']},
+                       'LightGrey6': {'BACKGROUND': '#e3e3e3', 'TEXT': '#233142', 'INPUT': '#455d7a', 'TEXT_INPUT': '#e3e3e3', 'SCROLL': '#233142',
+                                      'BUTTON': ('#e3e3e3', '#455d7a'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0, 'COLOR_LIST': ['#233142', '#455d7a', '#f95959', '#e3e3e3'],
+                                      'DESCRIPTION': ['Black', 'Blue', 'Red', 'Grey']},
+                       'HotDogStand': {'BACKGROUND': 'red', 'TEXT': 'yellow', 'INPUT': 'yellow', 'TEXT_INPUT': 'black', 'SCROLL': 'yellow',
+                                      'BUTTON': ('red', 'yellow'), 'PROGRESS': DEFAULT_PROGRESS_BAR_COLOR, 'BORDER': 1, 'SLIDER_DEPTH': 0,
+                                      'PROGRESS_DEPTH': 0,
+                                     },
+                       }
 
 
 def ListOfLookAndFeelValues():
@@ -8583,25 +7802,6 @@ def theme_list():
     return list_of_look_and_feel_values()
 
 
-
-def theme_add_new(new_theme_name, new_theme_dict):
-    """
-    Add a new theme to the dictionary of themes
-
-    :param new_theme_name: text to display in element
-    :type new_theme_name: (str)
-    :param new_theme_dict: text to display in element
-    :type new_theme_dict: (dict)
-    """
-    global LOOK_AND_FEEL_TABLE
-    try:
-        LOOK_AND_FEEL_TABLE[new_theme_name] = new_theme_dict
-    except Exception as e:
-        print('Exception during adding new theme {}'.format(e))
-
-
-
-
 def theme_previewer(columns=12):
     """
     Show a window with all of the color themes - takes a while so be patient
@@ -8609,7 +7809,6 @@ def theme_previewer(columns=12):
     :param columns: (int) number of themes in a single row
     """
     preview_all_look_and_feel_themes(columns)
-
 
 def ChangeLookAndFeel(index, force=False):
     """
@@ -8625,11 +7824,10 @@ def ChangeLookAndFeel(index, force=False):
     The number will vary for each pair. There are more DarkGrey entries than there are LightYellow for example.
     Default = The default settings (only button color is different than system default)
     Default1 = The full system default including the button (everything's gray... how sad... don't be all gray... please....)
-    :param index:  the name of the index into the Look and Feel table (does not have to be exact, can be "fuzzy")
-    :type index: (str)
-    :param force:  no longer used
-    :type force: (bool)
+    :param index: (str) the name of the index into the Look and Feel table (does not have to be exact, can be "fuzzy")
+    :param force: (bool) no longer used
     """
+
     global CURRENT_LOOK_AND_FEEL
 
     # if sys.platform.startswith('darwin') and not force:
@@ -8639,6 +7837,7 @@ def ChangeLookAndFeel(index, force=False):
     theme = index
     # normalize available l&f values
     lf_values = [item.lower() for item in list_of_look_and_feel_values()]
+
     # option 1
     opt1 = theme.replace(' ', '').lower()
 
@@ -8653,7 +7852,7 @@ def ChangeLookAndFeel(index, force=False):
     elif opt2 in lf_values:
         ix = lf_values.index(opt2)
     else:
-        ix = random.random.randint(0, len(lf_values) - 1)
+        ix = randint(0, len(lf_values) - 1)
         print('** Warning - {} Theme is not a valid theme. Change your theme call. **'.format(index))
         print('valid values are', list_of_look_and_feel_values())
         print('Instead, please enjoy a random Theme named {}'.format(list_of_look_and_feel_values()[ix]))
@@ -8665,10 +7864,10 @@ def ChangeLookAndFeel(index, force=False):
 
         # Color the progress bar using button background and input colors...unless they're the same
         if colors['PROGRESS'] != COLOR_SYSTEM_DEFAULT:
-                if colors['BUTTON'][1] != colors['INPUT'] and colors['BUTTON'][1] != colors['BACKGROUND']:
-                    colors['PROGRESS'] = colors['BUTTON'][1], colors['INPUT']
-                else:  # if the same, then use text input on top of input color
-                    colors['PROGRESS'] = (colors['TEXT_INPUT'], colors['INPUT'])
+            if colors['BUTTON'][1] != colors['INPUT'] and colors['BUTTON'][1] != colors['BACKGROUND']:
+                colors['PROGRESS'] = colors['BUTTON'][1], colors['INPUT']
+            else:  # if the same, then use text input on top of input color
+                colors['PROGRESS'] = (colors['TEXT_INPUT'], colors['INPUT'])
         else:
             colors['PROGRESS'] = DEFAULT_PROGRESS_BAR_COLOR_OFFICIAL
         # call to change all the colors
@@ -8739,14 +7938,6 @@ sprint = ScrolledTextBox
 
 # Converts an object's contents into a nice printable string.  Great for dumping debug data
 def ObjToStringSingleObj(obj):
-    """
-    Dumps an Object's values as a formatted string.  Very nicely done. Great way to display an object's member variables in human form
-    Returns only the top-most object's variables instead of drilling down to dispolay more
-    :param obj: The object to display
-    :type obj: (Any)
-    :return: Formatted output of the object's values
-    :rtype: (str)
-    """
     if obj is None:
         return 'None'
     return str(obj.__class__) + '\n' + '\n'.join(
@@ -8754,15 +7945,6 @@ def ObjToStringSingleObj(obj):
 
 
 def ObjToString(obj, extra='    '):
-    """
-    Dumps an Object's values as a formatted string.  Very nicely done. Great way to display an object's member variables in human form
-    :param obj: The object to display
-    :type obj: (Any)
-    :param extra: extra stuff (Default value = '    ')
-    :type extra: (str)
-    :return:  Formatted output of the object's values
-    :rtype: (str)
-    """
     if obj is None:
         return 'None'
     return str(obj.__class__) + '\n' + '\n'.join(
@@ -8781,49 +7963,25 @@ def ObjToString(obj, extra='    '):
 
 def Popup(*args, title=None, button_color=None, background_color=None, text_color=None, button_type=POPUP_BUTTONS_OK,
           auto_close=False, auto_close_duration=None, custom_text=(None, None), non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None,
-          font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), any_key_closes=False, image=None):
+          font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Popup - Display a popup box with as many parms as you wish to include
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Optional title for the window. If none provided, the first arg will be used instead.
-    :type title: (str)
-    :param button_color: Color of the buttons shown (text color, button color)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param button_type: NOT USER SET!  Determines which pre-defined buttons will be shown (Default value = POPUP_BUTTONS_OK). There are many Popup functions and they call Popup, changing this parameter to get the desired effect.
-    :type button_type: (int)
-    :param auto_close: If True the window will automatically close
-    :type auto_close: (bool)
-    :param auto_close_duration: time in seconds to keep window open before closing it automatically
-    :type auto_close_duration: (int)
-    :param custom_text: A string or pair of strings that contain the text to display on the buttons
-    :type custom_text: Union[Tuple[str, str], str]
-    :param non_blocking: If True then will immediately return from the function without waiting for the user's input.
-    :type non_blocking: (bool)
-    :param icon: icon to display on the window. Same format as a Window call
-    :type icon: Union[str, bytes]
-    :param line_width: Width of lines in characters.  Defaults to MESSAGE_BOX_LINE_WIDTH
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location on screen to display the top left corner of window. Defaults to window centered on screen
-    :type location: Tuple[int, int]
-    :param any_key_closes: If True then will turn on return_keyboard_events for the window which will cause window to close as soon as any key is pressed.  Normally the return key only will close the window.  Default is false.
-    :type any_key_closes: (bool)
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
-    :return: Returns text of the button that was pressed.  None will be returned if user closed window with X
-    :rtype: Union[str, None]
+    :param args:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param button_type:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
 
     if not args:
@@ -8839,25 +7997,15 @@ def Popup(*args, title=None, button_color=None, background_color=None, text_colo
     _title = str(_title)
     window = Window(_title, auto_size_text=True, background_color=background_color, button_color=button_color,
                     auto_close=auto_close, auto_close_duration=auto_close_duration, icon=icon, font=font,
-                    no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location,
-                    return_keyboard_events=any_key_closes)
+                    no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
     max_line_total, total_lines = 0, 0
-    layout = [[]]
-    if image is not None:
-        if isinstance(image, str):
-            layout += [[Image(filename=image)]]
-        else:
-            layout += [[Image(data_base64=image)]]
-
+    layout = []
     for message in args_to_print:
         # fancy code to check if string and convert if not is not need. Just always convert to string :-)
         # if not isinstance(message, str): message = str(message)
         message = str(message)
-        if message.count('\n'):         # if there are line breaks, then wrap each segment separately
-            # message_wrapped = message         # used to just do this, but now breaking into smaller pieces
-            message_wrapped = ''
-            msg_list = message.split('\n')      # break into segments that will each be wrapped
-            message_wrapped = '\n'.join([textwrap.fill(msg, local_line_width) for msg in msg_list])
+        if message.count('\n'):
+            message_wrapped = message
         else:
             message_wrapped = textwrap.fill(message, local_line_width)
         message_wrapped_lines = message_wrapped.count('\n') + 1
@@ -8866,8 +8014,7 @@ def Popup(*args, title=None, button_color=None, background_color=None, text_colo
         max_line_total = max(max_line_total, width_used)
         # height = _GetNumLinesNeeded(message, width_used)
         height = message_wrapped_lines
-        window.AddRow(
-            Text(message_wrapped, auto_size_text=True, text_color=text_color, background_color=background_color))
+        layout.append([Text(message_wrapped, auto_size_text=True, text_color=text_color, background_color=background_color)])
         total_lines += height
 
     # if total_lines < 3:
@@ -8875,7 +8022,7 @@ def Popup(*args, title=None, button_color=None, background_color=None, text_colo
     if non_blocking:
         PopupButton = DummyButton  # important to use or else button will close other windows too!
     else:
-        PopupButton = Button
+        PopupButton = CloseButton
     # show either an OK or Yes/No depending on paramater
     # show either an OK or Yes/No depending on paramater
     if custom_text != (None, None):
@@ -8906,7 +8053,6 @@ def Popup(*args, title=None, button_color=None, background_color=None, text_colo
         Window.active_popups[window] = title
     else:
         button, values = window.Read()
-        window.close()
 
     return button
 
@@ -8923,93 +8069,62 @@ def MsgBox(*args):
 # --------------------------- PopupNoButtons ---------------------------
 def PopupNoButtons(*args, title=None, button_color=None, background_color=None, text_color=None, auto_close=False,
                    auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None, font=None,
-                   no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+                   no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Show a Popup but without any buttons
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
+    :param args:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=POPUP_BUTTONS_NO_BUTTONS,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupNonBlocking ---------------------------
 def PopupNonBlocking(*args, title=None, button_type=POPUP_BUTTONS_OK, button_color=None, background_color=None, text_color=None,
                      auto_close=False, auto_close_duration=None, non_blocking=True, icon=DEFAULT_WINDOW_ICON,
                      line_width=None, font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False,
-                     location=(None, None), image=None):
+                     location=(None, None)):
     """
         Show Popup box and immediately return (does not block)
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
+    :param args:
+    :param title:
     :param button_type:
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=button_type,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 PopupNoWait = PopupNonBlocking
@@ -9018,49 +8133,32 @@ PopupNoWait = PopupNonBlocking
 # --------------------------- PopupQuick - a NonBlocking, Self-closing Popup  ---------------------------
 def PopupQuick(*args, title=None, button_type=POPUP_BUTTONS_OK, button_color=None, background_color=None, text_color=None,
                auto_close=True, auto_close_duration=2, non_blocking=True, icon=DEFAULT_WINDOW_ICON, line_width=None,
-               font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+               font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
         Show Popup box that doesn't block and closes itself
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_type: Determines which pre-defined buttons will be shown (Default value = POPUP_BUTTONS_OK).
-    :type button_type: (int)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_type:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=button_type,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupQuick - a NonBlocking, Self-closing Popup with no titlebar and no buttons ---------------------------
@@ -9068,95 +8166,62 @@ def PopupQuickMessage(*args, title=None, button_type=POPUP_BUTTONS_NO_BUTTONS, b
                       text_color=None,
                       auto_close=True, auto_close_duration=3, non_blocking=True, icon=DEFAULT_WINDOW_ICON,
                       line_width=None,
-                      font=None, no_titlebar=True, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+                      font=None, no_titlebar=True, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
         Show Popup box that doesn't block and closes itself
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_type: Determines which pre-defined buttons will be shown (Default value = POPUP_BUTTONS_OK).
-    :type button_type: (int)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_type:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=button_type,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupNoTitlebar ---------------------------
 def PopupNoTitlebar(*args, title=None, button_type=POPUP_BUTTONS_OK, button_color=None, background_color=None, text_color=None,
                     auto_close=False, auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON,
-                    line_width=None, font=None, grab_anywhere=True, keep_on_top=False, location=(None, None), image=None):
+                    line_width=None, font=None, grab_anywhere=True, keep_on_top=False, location=(None, None)):
     """
         Display a Popup without a titlebar.   Enables grab anywhere so you can move it
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_type: Determines which pre-defined buttons will be shown (Default value = POPUP_BUTTONS_OK).
-    :type button_type: (int)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_type:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=button_type,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=True, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=True, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 PopupNoFrame = PopupNoTitlebar
@@ -9168,49 +8233,32 @@ PopupAnnoying = PopupNoTitlebar
 def PopupAutoClose(*args, title=None, button_type=POPUP_BUTTONS_OK, button_color=None, background_color=None, text_color=None,
                    auto_close=True, auto_close_duration=DEFAULT_AUTOCLOSE_TIME, non_blocking=False, icon=DEFAULT_WINDOW_ICON,
                    line_width=None, font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False,
-                   location=(None, None), image=None):
+                   location=(None, None)):
     """
         Popup that closes itself after some time period
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_type: Determines which pre-defined buttons will be shown (Default value = POPUP_BUTTONS_OK).
-    :type button_type: (int)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_type:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_color=button_color, background_color=background_color, text_color=text_color,
           button_type=button_type,
           auto_close=auto_close, auto_close_duration=auto_close_duration, non_blocking=non_blocking, icon=icon,
           line_width=line_width,
-          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+          font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 PopupTimed = PopupAutoClose
@@ -9219,92 +8267,60 @@ PopupTimed = PopupAutoClose
 # --------------------------- PopupError ---------------------------
 def PopupError(*args, title=None, button_color=(None, None), background_color=None, text_color=None, auto_close=False,
                auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None, font=None,
-               no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+               no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
         Popup with colored button and 'Error' as button text
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     tbutton_color = DEFAULT_ERROR_BUTTON_COLOR if button_color == (None, None) else button_color
     Popup(*args, title=title, button_type=POPUP_BUTTONS_ERROR, background_color=background_color, text_color=text_color,
           non_blocking=non_blocking, icon=icon, line_width=line_width, button_color=tbutton_color, auto_close=auto_close,
           auto_close_duration=auto_close_duration, font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere,
-          keep_on_top=keep_on_top, location=location, image=image)
+          keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupCancel ---------------------------
 def PopupCancel(*args, title=None, button_color=None, background_color=None, text_color=None, auto_close=False,
                 auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None, font=None,
-                no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+                no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
         Display Popup with "cancelled" button text
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param title: Title to display in the window.
-    :type title: (str)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param title:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_type=POPUP_BUTTONS_CANCELLED, background_color=background_color, text_color=text_color,
           non_blocking=non_blocking, icon=icon, line_width=line_width, button_color=button_color, auto_close=auto_close,
           auto_close_duration=auto_close_duration, font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere,
-          keep_on_top=keep_on_top, location=location, image=image)
+          keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupOK ---------------------------
@@ -9313,132 +8329,82 @@ def PopupOK(*args, title=None, button_color=None, background_color=None, text_co
             no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Display Popup with OK button only
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
+    :return:
     """
     Popup(*args, title=title, button_type=POPUP_BUTTONS_OK, background_color=background_color, text_color=text_color,
           non_blocking=non_blocking, icon=icon, line_width=line_width, button_color=button_color, auto_close=auto_close,
           auto_close_duration=auto_close_duration, font=font, no_titlebar=no_titlebar, grab_anywhere=grab_anywhere,
-          keep_on_top=keep_on_top, location=location, image=image)
+          keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupOKCancel ---------------------------
 def PopupOKCancel(*args, title=None, button_color=None, background_color=None, text_color=None, auto_close=False,
                   auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None, font=None,
-                  no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+                  no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Display popup with OK and Cancel buttons
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
     :return: OK, Cancel or None
-    :rtype: Union[str, None]
     """
     return Popup(*args, title=title, button_type=POPUP_BUTTONS_OK_CANCEL, background_color=background_color, text_color=text_color,
                  non_blocking=non_blocking, icon=icon, line_width=line_width, button_color=button_color,
                  auto_close=auto_close, auto_close_duration=auto_close_duration, font=font, no_titlebar=no_titlebar,
-                 grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+                 grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 # --------------------------- PopupYesNo ---------------------------
 def PopupYesNo(*args, title=None, button_color=None, background_color=None, text_color=None, auto_close=False,
                auto_close_duration=None, non_blocking=False, icon=DEFAULT_WINDOW_ICON, line_width=None, font=None,
-               no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+               no_titlebar=False, grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Display Popup with Yes and No buttons
-
-    :param *args:  Variable number of your arguments.  Load up the call with stuff to see!
-    :type *args: (Any)
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param auto_close: if True window will close itself
-    :type auto_close: (bool)
-    :param auto_close_duration: Older versions only accept int. Time in seconds until window will close
-    :type auto_close_duration: Union[int, float]
-    :param non_blocking: if True the call will immediately return rather than waiting on user input
-    :type non_blocking: (bool)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param line_width: Width of lines in characters
-    :type line_width: (int)
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param args:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param auto_close:
+    :param auto_close_duration:
+    :param non_blocking:
+    :param icon:
+    :param line_width:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
     :return: Yes, No or None
-    :rtype: Union[str, None]
     """
     return Popup(*args, title=title, button_type=POPUP_BUTTONS_YES_NO, background_color=background_color, text_color=text_color,
                  non_blocking=non_blocking, icon=icon, line_width=line_width, button_color=button_color,
                  auto_close=auto_close, auto_close_duration=auto_close_duration, font=font, no_titlebar=no_titlebar,
-                 grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location, image=image)
+                 grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
 
 ##############################################################################
@@ -9450,43 +8416,23 @@ def PopupYesNo(*args, title=None, button_color=None, background_color=None, text
 
 def PopupGetFolder(message, title=None, default_path='', no_window=False, size=(None, None), button_color=None,
                    background_color=None, text_color=None, icon=DEFAULT_WINDOW_ICON, font=None, no_titlebar=False,
-                   grab_anywhere=False, keep_on_top=False, location=(None, None), initial_folder=None, image=None):
+                   grab_anywhere=False, keep_on_top=False, location=(None, None), initial_folder=None):
     """
     Display popup with text entry field and browse button. Browse for folder
-    :param message: message displayed to user
-    :type message: (str)
-    :param title: Window title
-    :type title: (str)
-    :param default_path: path to display to user as starting point (filled into the input field)
-    :type default_path: (str)
-    :param no_window: if True, no PySimpleGUI window will be shown. Instead just the tkinter dialog is shown
-    :type no_window: (bool)
-    :param size: (width, height) of the InputText Element
-    :type size: Tuple[int, int]
-    :param button_color: button color (foreground, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param initial_folder: location in filesystem to begin browsing
-    :type initial_folder: (str)
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param message:
+    :param default_path:
+    :param no_window:
+    :param size:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param icon:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
     :return: Contents of text field. None if closed using X or cancelled
-    :rtype: Union[str, None]
     """
 
 
@@ -9497,16 +8443,9 @@ def PopupGetFolder(message, title=None, default_path='', no_window=False, size=(
         folder_name = QFileDialog.getExistingDirectory(dir=initial_folder)
         return folder_name
 
-    if image is not None:
-        if isinstance(image, str):
-            layout = [[Image(filename=image)]]
-        else:
-            layout = [[Image(data_base64=image)]]
-    else:
-        layout = [[]]
-    layout += [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color)],
+    layout = [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color)],
               [InputText(default_text=default_path, size=size, key='_INPUT_'), FolderBrowse(initial_folder=initial_folder)],
-              [Button('Ok', size=(60, 20), bind_return_key=True), Button('Cancel', size=(60, 20))]]
+              [CloseButton('Ok', size=(60, 20), bind_return_key=True), CloseButton('Cancel', size=(60, 20))]]
 
     _title = title if title is not None else message
     window = Window(title=_title, layout=layout, icon=icon, auto_size_text=True, button_color=button_color,
@@ -9515,7 +8454,7 @@ def PopupGetFolder(message, title=None, default_path='', no_window=False, size=(
                     location=location)
 
     button, values = window.Read()
-    window.close()
+
     if button != 'Ok':
         return None
     else:
@@ -9528,52 +8467,26 @@ def PopupGetFolder(message, title=None, default_path='', no_window=False, size=(
 def PopupGetFile(message, title=None, default_path='', default_extension='', save_as=False, file_types=(("ALL Files", "*"),),
                  no_window=False, size=(None, None), button_color=None, background_color=None, text_color=None,
                  icon=DEFAULT_WINDOW_ICON, font=None, no_titlebar=False, grab_anywhere=False, keep_on_top=False,
-                 location=(None, None), initial_folder=None, image=None):
+                 location=(None, None), initial_folder=None):
     """
         Display popup with text entry field and browse button. Browse for file
-
-    :param message: message displayed to user
-    :type message: (str)
-    :param title: Window title
-    :type title: (str)
-    :param default_path: path to display to user as starting point (filled into the input field)
-    :type default_path: (str)
-    :param default_extension: If no extension entered by user, add this to filename (only used in saveas dialogs)
-    :type default_extension: (str)
-    :param save_as: if True, the "save as" dialog is shown which will verify before overwriting
-    :type save_as: (bool)
-    :param multiple_files: if True, then allows multiple files to be selected that are returned with ';' between each filename
-    :type multiple_files: (bool)
-    :param file_types: List of extensions to show using wildcards. All files (the default) = (("ALL Files", "*.*"),)
-    :type file_types: Tuple[Tuple[str,str]]
-    :param no_window: if True, no PySimpleGUI window will be shown. Instead just the tkinter dialog is shown
-    :type no_window: (bool)
-    :param size: (width, height) of the InputText Element
-    :type size: Tuple[int, int]
-    :param button_color: Color of the button (text, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param font:  specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top:  If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: Location of upper left corner of the window
-    :type location: Tuple[int, int]
-    :param initial_folder: location in filesystem to begin browsing
-    :type initial_folder: (str)
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param message:
+    :param default_path:
+    :param default_extension:
+    :param save_as:
+    :param file_types:
+    :param no_window:
+    :param size:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param icon:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
     :return:  string representing the path chosen, None if cancelled or window closed with X
-    :rtype: Union[str, None]
     """
 
     if no_window:
@@ -9592,18 +8505,9 @@ def PopupGetFile(message, title=None, default_path='', default_extension='', sav
     browse_button = SaveAs(file_types=file_types, initial_folder=initial_folder) if save_as else FileBrowse(
         file_types=file_types, initial_folder=initial_folder)
 
-
-    if image is not None:
-        if isinstance(image, str):
-            layout = [[Image(filename=image)]]
-        else:
-            layout = [[Image(data_base64=image)]]
-    else:
-        layout = [[]]
-
-    layout += [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color)],
+    layout = [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color)],
               [InputText(default_text=default_path, size=(30,1), key='_INPUT_'), browse_button],
-              [Button('Ok', size=(60, 20), bind_return_key=True), Button('Cancel', size=(60, 20))]]
+              [CButton('Ok', size=(60, 20), bind_return_key=True), CButton('Cancel', size=(60, 20))]]
 
     _title = title if title is not None else message
 
@@ -9612,7 +8516,7 @@ def PopupGetFile(message, title=None, default_path='', default_extension='', sav
                     no_titlebar=no_titlebar, grab_anywhere=grab_anywhere, keep_on_top=keep_on_top, location=location)
 
     button, values = window.Read()
-    window.close()
+    # window.Close()
     if button != 'Ok':
         return None
     else:
@@ -9624,54 +8528,28 @@ def PopupGetFile(message, title=None, default_path='', default_extension='', sav
 
 def PopupGetText(message, title=None, default_text='', password_char='', size=(None, None), button_color=None,
                  background_color=None, text_color=None, icon=DEFAULT_WINDOW_ICON, font=None, no_titlebar=False,
-                 grab_anywhere=False, keep_on_top=False, location=(None, None), image=None):
+                 grab_anywhere=False, keep_on_top=False, location=(None, None)):
     """
     Display Popup with text entry field
-    :param message: message displayed to user
-    :type message: (str)
-    :param title: Window title
-    :type title: (str)
-    :param default_text: default value to put into input area
-    :type default_text: (str)
-    :param password_char: character to be shown instead of actually typed characters
-    :type password_char: (str)
-    :param size: (width, height) of the InputText Element
-    :type size: Tuple[int, int]
-    :param button_color: Color of the button (text, background)
-    :type button_color: Tuple[str, str]
-    :param background_color: color of background
-    :type background_color: (str)
-    :param text_color: color of the text
-    :type text_color: (str)
-    :param icon: filename or base64 string to be used for the window's icon
-    :type icon: Union[bytes, str]
-    :param font: specifies the font family, size, etc
-    :type font: Union[str, Tuple[str, int]]
-    :param no_titlebar: If True no titlebar will be shown
-    :type no_titlebar: (bool)
-    :param grab_anywhere: If True, than can grab anywhere to move the window (Default = False)
-    :type grab_anywhere: (bool)
-    :param keep_on_top: If True the window will remain above all current windows
-    :type keep_on_top: (bool)
-    :param location: (x,y) Location on screen to display the upper left corner of window
-    :type location: Tuple[int, int]
-    :param image:  Image to include at the top of the popup window
-    :type image: (str) or (bytes)
+    :param message:
+    :param default_text:
+    :param password_char:
+    :param size:
+    :param button_color:
+    :param background_color:
+    :param text_color:
+    :param icon:
+    :param font:
+    :param no_titlebar:
+    :param grab_anywhere:
+    :param keep_on_top:
+    :param location:
     :return: Text entered or None if window was closed
-    :rtype: Union[str, None]
     """
 
-    if image is not None:
-        if isinstance(image, str):
-            layout = [[Image(filename=image)]]
-        else:
-            layout = [[Image(data_base64=image)]]
-    else:
-        layout = [[]]
-
-    layout += [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color, font=font)],
+    layout = [[Text(message, auto_size_text=True, text_color=text_color, background_color=background_color, font=font)],
               [InputText(default_text=default_text, size=size, password_char=password_char, key='_INPUT_')],
-              [Button('Ok', size=(60, 20), bind_return_key=True), Button('Cancel', size=(60, 20))]]
+              [CloseButton('Ok', size=(60, 20), bind_return_key=True), CloseButton('Cancel', size=(60, 20))]]
 
     _title = title if title is not None else message
 
@@ -9680,52 +8558,11 @@ def PopupGetText(message, title=None, default_text='', password_char='', size=(N
                     location=location)
 
     button, values = window.Read()
-    window.close()
 
     if button != 'Ok':
         return None
     else:
         return values['_INPUT_']
-
-
-# --------------------------------------- a few icons in base64 ---------------------------------------
-
-
-ICON_BASE64_BLOB_PALM = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNjo1ODowNy0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTY6NTg6MDctMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE2OjU4OjA3LTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDo4NWFmYzM1My1hMzMyLWFlNGQtOGE0ZC1lYTExOTk1MDU5M2E8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDpiMWM2N2U0Zi1iY2E2LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDphNzVkMDNmMS1lNjE3LWM0NDktYjYxNy0zZjc4YWFjMDBjNTQ8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6YTc1ZDAzZjEtZTYxNy1jNDQ5LWI2MTctM2Y3OGFhYzAwYzU0PC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE2OjU4OjA3LTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjg1YWZjMzUzLWEzMzItYWU0ZC04YTRkLWVhMTE5OTUwNTkzYTwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNjo1ODowNy0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjc4PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjcxPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz62g3pFAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAABdqSURBVHja7Jz3c1xXlt+/5977cucANCKRmINAShoqzYxGOzsu79Ta/g/8L/kvsctll721nl1b3t1ZaShRFClRgkiQIAgih250eOkG/9ANEgRBECABSa7Sq+p6XQQL7+LzTj73XDLG4Jfr6Jf4uSxk+tp1Osr/v3Xz85/0jdNPJXF7QNFL7vtdZr/7jw3yRwe3CxgBYLvuvHff+U57AJreRwHQvc/Od7Pr/qNA/FHA7QOLARCcGcvi2rGFcYUwnmtpx3OUF7jacS3NLaE5Z4YBQCKZjlOWhDFL2xEP45RFiaQokRSnkkVKU6INyd0wTxLgiYPrQdsBZtlC24Gr/Jwvc/lAFfK+rOZ9Wcr6shy4qpBxVTbwlO9Yxu6BEzCQiWRIUpaECQvbIe+0It5sRXy9GfKNRlusNjpic7stGs1QtDoJ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'
-
-ICON_BASE64_BLOB_PAT = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNjo1OTowNi0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTY6NTk6MDYtMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE2OjU5OjA2LTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDpiMWNmNDU1YS04Yjk4LTFmNDYtYmJlNi1iNmY1ZGMxMGYwYWE8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDpkM2FmN2UyNi1iY2E2LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDo0YjE4ZTE1Mi0yNWMzLWY3NDAtOWU4Yi0zYmRjNjFjMjI5Njk8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6NGIxOGUxNTItMjVjMy1mNzQwLTllOGItM2JkYzYxYzIyOTY5PC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE2OjU5OjA2LTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmIxY2Y0NTVhLThiOTgtMWY0Ni1iYmU2LWI2ZjVkYzEwZjBhYTwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNjo1OTowNi0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjgxPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjc1PC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz6vCsFxAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAABGmSURBVHja7Jx5cJzlfce/z/Meex+SdqWVVpdZWbIlY1lWjIhx42ZIYopT7jFgDCZOAy2QozChSWaShjQpAylkmhCaGHAHN5hjCuWoaaEl0A50SsHGMpaNbQlfyJZk3Vrtvsdz9I93dfpaW7vGJnpmdnTs7rvv+3l/9+/3LJFSYnbNbNFZBLMQZyHOQpxdsxBnIc5CnIU4u46z1PP55Fdf0eiPhXlzUUA0+D2yRFWEX0rCLIbRlEF6+5NKW++w0rbxxdbefJ4HOV8zlrvXNly6amnyPwu8Al5dQFMASiQkCIQAmABMTjGcIjjUp7a2HnQ9+qNf71o/CzGz/uKGhsbLGlNPLptvNuqKhEIlKJl4XgKQEhCSwOZAyqToH6U41Kft3nHItWHHQdf6jf+ybfAPWp3nRO2VF1ZajUG3cCSBnOiV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'
-
-ICON_BASE64_BLOB_THINK = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNzowNjozMi0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTc6MDY6MzItMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE3OjA2OjMyLTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDpjZGY4YTM3NS05ODVkLTdhNGQtOTU5OS1iOGJmYjZiZGMwYmI8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDpkZWE3YjA5Yi1iY2E3LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDo5YjY3OTMyNi04MjExLTZjNDgtYjk0NS00NzY2MzI1NDU3M2Y8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6OWI2NzkzMjYtODIxMS02YzQ4LWI5NDUtNDc2NjMyNTQ1NzNmPC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE3OjA2OjMyLTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmNkZjhhMzc1LTk4NWQtN2E0ZC05NTk5LWI4YmZiNmJkYzBiYjwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNzowNjozMi0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjU0PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjUyPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz7BeLFDAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAArWSURBVHja7FppcFRVFv7ue6/3nXQ20kmAkJgQkjSGpKEhQiEIgkZQQBjEQXRwqUHU2YxDUaWjjFVayhQz4zbMoOWCzjC4MCAG2Q0DhBBMgjEGQkJIyEaW3vu9d+/8CGBQknSHBEeLW9U/Xte7957vnnO++91zH2GM4afYOPxE208WmDAUg86eke0cGS2lJ0RK6ZEmOcGip7E6NTMrBaYCgKBEAh4/6Wh3c40tnXxdXYtQUdMkVGwrPFo0WDaQwcqxSc6cJPuowIwpYwOLUm1Bp8XAFAaNDJXAIAgEHLl8HsoIJIkhIBG4fDzaXUSsrFcW7S1XbSo9pSr8oujIyR8U2I3ZudHjkoK3LJvuWpuRGLRp1Qz8AANcpoDXT1BWq6zfuNPw1LGTys9Kjh5uuubApuaNT192s3vtgjxPvlo5uOzq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'
-
-ICON_BASE64_BLOB_THINK2 = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNzowOTozMy0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTc6MDk6MzMtMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE3OjA5OjMzLTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDpiYzcxZTAzMC1hY2UwLWFlNGMtYTI2YS1hNGJlM2E4NDNlMDA8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDo0OWE4ZGNmZC1iY2E4LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDpjMWE2NTcxYS1lNGJlLTczNDMtYjAzNy1lYmE3NmRjMTA3YWI8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6YzFhNjU3MWEtZTRiZS03MzQzLWIwMzctZWJhNzZkYzEwN2FiPC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE3OjA5OjMzLTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmJjNzFlMDMwLWFjZTAtYWU0Yy1hMjZhLWE0YmUzYTg0M2UwMDwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNzowOTozMy0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjU4PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjU1PC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz5uOveQAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAqxSURBVHja7Fp5VJTXFf+9b5kFBoYdDciwiMhe0xhFwYQYTdUTl7hErVWJWYptNGoalwQ92mOiydGqaRajiWarRk1jbIItjUHEiNYYRKKgMiMDiCDrMGyzfN/rH+PgAMMyAybmxHvOd2DuvPvN7/fu/d69776PUErxaxAGvxK5R/Qe0XtE7xG9K4S7Uzde9WxsRKi/OSJsgGmom5y6dTe2vJYtvVHHlmpvcppNu/Iv3wk8pD/z6MqnY8Of+V3jclepqFDIqLuLTJzsiH1zK3OkyUAa8zSSs99ekH29eXf+1buKaMqM3yiWTdWtj1aZhgFI7idsmZdK+NytXyjX7Tl0vvFnJ7r/tYj5MxObFvYjwU6ED5503Tt79eWPfhaiqb+P90md0LA6MsgUzxCMvb28SQH3kSCyIEDiDar7HtD/DxCN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'
-
-ICON_BASE64_BROW = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNjo1MzowNC0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTY6NTM6MDQtMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE2OjUzOjA0LTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDo5ZGMyYTFmMC02ZWJhLWQ3NDYtOGIzMC1jYzYwMWM0ZGIzMzE8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDplNjE1MzI2Zi1iY2E1LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDpiMzM5ZDA0Mi1mNGFkLTQ5NDUtOTBiZS1hZTg0ZTE2ZGNiZDI8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6YjMzOWQwNDItZjRhZC00OTQ1LTkwYmUtYWU4NGUxNmRjYmQyPC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE2OjUzOjA0LTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjlkYzJhMWYwLTZlYmEtZDc0Ni04YjMwLWNjNjAxYzRkYjMzMTwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNjo1MzowNC0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjUzPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjUzPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz6xTRINAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAeISURBVHja3Jp7UFTXHce/d3fZZR8sIPJQeSwghFeAsTVBIriWphkMGB9kGmOYaXWa1mQm0VJjCGGmDzdoUtT+0w7Q0GbUkNYHhBUz49iGRwKkolVQoKTA7gIqILIsu3ff9/YP0x3JPi+5IPj7a/fc8zt7Pvs753d/v3N+BE3TeNyEg8dQHksoHtsDHnw1NzEznp8pW8WVRYfyogJEhFTsT4gAwGCiyVmS1mkmbSOqO3ZVn9rae/iPLTfZngPBxp46UiLPKtggLEyV8VIIguAA2OqjaiNN09StYWvvhU6T8u3K5s5HDvXRe3k7ijaJdor9CQkDELeARjNFnm8z1e8+dPnviw71wVubN762VbJPLGQFxgmONNFkdZOhav97/2xeFKj++vyjSdF+SQsA4wTXr7b2J+347NCCQe3fkytT7A1U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'
-
-ICON_BASE64_BLOB_HEADACHE = b'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/GMzLdsAADpCaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNjo1NToyNi0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTY6NTU6MjYtMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE2OjU1OjI2LTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDoxYzUxOTkzZi05MjNiLTM2NGItYWY5ZS1mNGE3MzViYjgxYTI8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDo1MDgwYWJhOC1iY2E2LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDo3YWMwMzdjMC03ZmMzLWNhNDgtYmVlYi1lM2Q0ZDJjODJiNTU8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6N2FjMDM3YzAtN2ZjMy1jYTQ4LWJlZWItZTNkNGQyYzgyYjU1PC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE2OjU1OjI2LTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjFjNTE5OTNmLTkyM2ItMzY0Yi1hZjllLWY0YTczNWJiODFhMjwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNjo1NToyNi0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjcxPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjcxPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz5o6m+QAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAABbGSURBVHja7HxZcGTXed73n3Puvb13oxtrYx1gMJjBLMTOWUiKiiRGcuxS2Y7K5bhsObEdOXmIk5TzkJQqSfkpecxTqpyUK3mwrUiqKHbJkkxRIk1KwyFnBrNzFgwGGKyDrbH0fu9Z8nDRBIboBockhpJcc6pQ/dIXOOe7//J93zkHZIzBs1F9sGcQPAPnGTjPwHkGzs/HED/rCXzmxRFyLEBwQ4IbWBzEyIARiAjQxv9RiozSgNRkPAnjSYKnCD89f/GptVv6NFv50PAYBWzDGuNKNCRUMBnTibqwakpETFs4oJtDjmkJOSZhMRMRDEFi4FoDnoJyPSoWPcoVXbaWLdJytsDmt4psPpNlc2ubbHNti7sbeabGL79rfmHAGR4Zo5BjWGeTDHQ2ynRbvRxJRfVnE2E1Gg2ZdNjRkYBtLEsY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'
-
-ICON_BASE64_LEGO_THINK = b'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/GMzLdsAADpEaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICAgICAgICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyMC0wNy0wMlQxNzoxNTozNC0wNDowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjAtMDctMDJUMTc6MTU6MzQtMDQ6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDIwLTA3LTAyVDE3OjE1OjM0LTA0OjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcE1NOkluc3RhbmNlSUQ+eG1wLmlpZDpkYzQ2ZDAwNS1hY2U0LTkwNDUtODUzMC1iY2Y4Zjc3Y2U2NjA8L3htcE1NOkluc3RhbmNlSUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDoyM2FiN2M2NS1iY2E5LTExZWEtYTEwYi1iMTlmYTMxNTc1YWQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+eG1wLmRpZDowNDRhZDA4Zi03ZmQ0LWMwNGItYmY1Yy01MTI4NzQzMjcyNTA8L3htcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1NOkhpc3Rvcnk+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6MDQ0YWQwOGYtN2ZkNC1jMDRiLWJmNWMtNTEyODc0MzI3MjUwPC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE3OjE1OjM0LTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmRjNDZkMDA1LWFjZTQtOTA0NS04NTMwLWJjZjhmNzdjZTY2MDwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNzoxNTozNC0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjEwMzwvZXhpZjpQaXhlbFhEaW1lbnNpb24+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xMTI8L2V4aWY6UGl4ZWxZRGltZW5zaW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0IGVuZD0idyI/PnSBBO0AAAAgY0hSTQAAeiUAAICDAAD5/wAAgOkAAHUwAADqYAAAOpgAABdvkl/FRgAADbNJREFUeNrsnXuMXFUdxz/nznNn3y92u215s9tSrEXEF1BwqdgVJchDJSKaYKJEjZoYgxhEJSYSefhIJBgSjDS8o/KyJkClLSpt0ZRKlb62tLYWumz3PTu7M/ce//idW/Yuu8PM7szuLT2/ZHP23jn3zp3z+33P73nOVVprLIWTHDsEljmWLHMscyxZ5liyzAkxRcP2QD/65kXOLb943tv6aJcCVG1NBIBkTAEQi4jpH3Pk2FFy7Jjj6cjzNID2tPTLyjFZV44zWTkeGHIV4Dy+cdQF1C2/eN6br7FQYfZztj7adXVtTSQJuMmYcgE3FtHSOsoDco7SHuA5jsqZy1zAm/Tnep7WgOtppQGd9XTOMMcFdCYr9xkYcvWKq9buC8PvDy1z9EufigA7gYVmgPWEwc6BmnisDVP0pL7+OT2B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'
-
-ICON_BASE64_THINK = b'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/GMzLdsAAD+paVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0NSA3OS4xNjIzMTksIDIwMTgvMDIvMTUtMjA6Mjk6NDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgICAgICAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgICAgICAgICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgICAgICAgICAgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiCiAgICAgICAgICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMjAtMDctMDJUMTc6MDI6MDUtMDQ6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1ldGFkYXRhRGF0ZT4yMDIwLTA3LTAyVDE3OjAyOjUxLTA0OjAwPC94bXA6TWV0YWRhdGFEYXRlPgogICAgICAgICA8eG1wOk1vZGlmeURhdGU+MjAyMC0wNy0wMlQxNzowMjo1MS0wNDowMDwveG1wOk1vZGlmeURhdGU+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6NGZjMmNkMTQtYjBhZi05ODQ0LTkyNTAtZTk1NTRhYjMzYzJmPC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD5hZG9iZTpkb2NpZDpwaG90b3Nob3A6NTU3OWQyOWUtYmNhNy0xMWVhLWExMGItYjE5ZmEzMTU3NWFkPC94bXBNTTpEb2N1bWVudElEPgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6OWUzNGE0MWQtOTM2YS1jZTRhLTgzNTMtZWVhYWEyYWQ2NjU1PC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjllMzRhNDFkLTkzNmEtY2U0YS04MzUzLWVlYWFhMmFkNjY1NTwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMC0wNy0wMlQxNzowMjowNS0wNDowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIEVsZW1lbnRzIDE3LjAgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+c2F2ZWQ8L3N0RXZ0OmFjdGlvbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDoxMGZiMmQwMi04NmUzLTAyNDMtYTc0Ny1hOGVkODM3NDU3NDk8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDp3aGVuPjIwMjAtMDctMDJUMTc6MDI6NTEtMDQ6MDA8L3N0RXZ0OndoZW4+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpzb2Z0d2FyZUFnZW50PkFkb2JlIFBob3Rvc2hvcCBFbGVtZW50cyAxNy4wIChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmNoYW5nZWQ+Lzwvc3RFdnQ6Y2hhbmdlZD4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0iUmVzb3VyY2UiPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6YWN0aW9uPmNvbnZlcnRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6cGFyYW1ldGVycz5mcm9tIGFwcGxpY2F0aW9uL3ZuZC5hZG9iZS5waG90b3Nob3AgdG8gaW1hZ2UvcG5nPC9zdEV2dDpwYXJhbWV0ZXJzPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+ZGVyaXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6cGFyYW1ldGVycz5jb252ZXJ0ZWQgZnJvbSBhcHBsaWNhdGlvbi92bmQuYWRvYmUucGhvdG9zaG9wIHRvIGltYWdlL3BuZzwvc3RFdnQ6cGFyYW1ldGVycz4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0iUmVzb3VyY2UiPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6YWN0aW9uPnNhdmVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6NGZjMmNkMTQtYjBhZi05ODQ0LTkyNTAtZTk1NTRhYjMzYzJmPC9zdEV2dDppbnN0YW5jZUlEPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6d2hlbj4yMDIwLTA3LTAyVDE3OjAyOjUxLTA0OjAwPC9zdEV2dDp3aGVuPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgRWxlbWVudHMgMTcuMCAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpjaGFuZ2VkPi88L3N0RXZ0OmNoYW5nZWQ+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICA8L3JkZjpTZXE+CiAgICAgICAgIDwveG1wTU06SGlzdG9yeT4KICAgICAgICAgPHhtcE1NOkRlcml2ZWRGcm9tIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgPHN0UmVmOmluc3RhbmNlSUQ+eG1wLmlpZDoxMGZiMmQwMi04NmUzLTAyNDMtYTc0Ny1hOGVkODM3NDU3NDk8L3N0UmVmOmluc3RhbmNlSUQ+CiAgICAgICAgICAgIDxzdFJlZjpkb2N1bWVudElEPnhtcC5kaWQ6OWUzNGE0MWQtOTM2YS1jZTRhLTgzNTMtZWVhYWEyYWQ2NjU1PC9zdFJlZjpkb2N1bWVudElEPgogICAgICAgICAgICA8c3RSZWY6b3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6OWUzNGE0MWQtOTM2YS1jZTRhLTgzNTMtZWVhYWEyYWQ2NjU1PC9zdFJlZjpvcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDwveG1wTU06RGVyaXZlZEZyb20+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDxwaG90b3Nob3A6SUNDUHJvZmlsZT5zUkdCIElFQzYxOTY2LTIuMTwvcGhvdG9zaG9wOklDQ1Byb2ZpbGU+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjE8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjUwPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjUwPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg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'
-
-
-ICON_BASE64_PALM = b'iVBORw0KGgoAAAANSUhEUgAAAEkAAAA8CAMAAAAdQmecAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURQAAAB8SDx4UEiAUDyAUEiMZFSUbGSsUEy8aFiwbGTsUFTkdICwiHTIjHDQrHzsiGysjIjIlIDMqIzMsKjsgIzotID0uKT01IzszMUkYHE0ZIFkbKEQhHkUqH0sgHUUgI0MtIkUoKEsmIEwqIkwqL00rM0I1I0s1JEswKE04J0w7LUc9OVYpJ1omMVM0JVQ1K1I4JVU7KlszK1k6J1s7KVw4NGEdLmQeMWghNmE5LWQ4NXIiPWs2RHkkQnAzRVRENVNDOF1ENFxEOVpKOWNDM2NHPWNMPGxFOWxKPG9QPnJKPHVQP05HRFJMSltUUWpLQ2lUQ2NcWndNQndIU3JUQ3JUSHRZTHxSRHxVSHxZSnlaVH1YYmZgX39gVmZjYnZran14doFURoNWSYNbTYNeUoleUItbaYRgT4VhU4JiWIVoXIpjVIxlWo1oVo1pWpFiVpFlWZJsXZRxX4JmZYVsY4trY4pzaoN9e5NtYpRtaJltY5ZxYpRyaZpzZZx1ap14a5N4eJx1cJp3eJ15cZp6eqB2a6J6baN8cqJ7eax9cah+epx7hImBf5uBeqWAdKOCe6qCdKqDequJfbKJfY2EgpmIiZqVk52Zk6SBhKaFiKyDgqqFiayJgqyNi6aLkayNlKGQi6uRja+QlqySm6qZlLKMhLKOi7SRi76Th7qTi7KTk7KVm7KYk7SZm7iWk7yZk7ucm7Sco7ScqbqeorOfsK2knrmhnKukoqyop7GrqrqhpLqlq7mup7urqrSosbKuubqjsrymubyps7qqub6xrbSxsLizvbe1wr68ycKYi8OcmsCmo8KmqcGup8Ooq8qqqcersMGvv8yutMKxu8uwtM2zusy+v9G3usCwwsS0yca8xsW7y82/x8m9ysm90Ne8wMjAvMPCxsLAyc3Ax8vAy8/IzMbD0c3F08zK2NPLx9DJztnBydLO09LL2tPS19TS29rU29bU4dnT5NzV6NvZ4+Hf5uDd6+Pi7eXj8ejl9Ozp9/Lw+wAAAAAAAAAAAAAAAErQjXwAAAEAdFJOU////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wBT9wclAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAHU0lEQVRYR5WWf1gbZx3A8bw2y7nJVq00ZM9Eq63t0o3QFNKkrLbjoRjXsWFHCI+T0gNNe2nWm4Ndm9xFTLmj1UFONsUU1s2aZRRxdP7otNZN1Omc1inTdbad06danzlkVoR2/hG/7w8gNG/Y9iE/uPf9vp/7vt/37r0UZPLx34nxiYmJNybp4VuSxzQ9MXn5zempqelLlybfpotteu31ifFzfzp7/sL45PT09MS/aPOCME1jZ8+fGxs9Njw0fGLswuT01D/+SjsWgmU6fnJs7IUTx7410N8/MDx64eKlqV++DRXD9M2BkZOnfjicTvV0d/f0Hx09f/HNf//iL7QzP7mmn0XN9BMjR9PpfhOpkkdHz0z97+9PT9DuvOSa7gvHus2vYEzT6E4MDP10/PKlM0/T7rzkmoLBeyORWMwwzf6UaZowvydPX7z8nzPP0v585JhO7pIkWZbvVXUzlUomzYNmcui7L49fvPDs6zQiDzmmr9UHg7vDu8MRVTcOHESq5KEjz7z8yitnfkwj8pBr2njHNjEo7ZbliGFAQsk+eB155vTpc6f/RkPY5JiOr7i1uh5UYUVROw4ehEolk1193zj2k9+NLpxUbsWXrt5YfdfnpDAUS9UgLaCrq2/g6JETT9IINrmmJStWb9wUCKK6K0h1wDCMDs1IHjr8Tk23F63aeOsdooSXUNU6O7QOTdM7937x0NAbNIRJrumrS4tWb64OiFKrJEshWdnXqWr7QqGO/fuHztIQJrmmzKKiFauc9aLYIkp7xHvkfXtCLSG5Y+TU1w8foRFMGKat7y1asbLaH/CLkNeO5h2trZJk/Oq3I/uHh/9IQ1gwTD+4qnBpkbPK5xf9zTua/c1+fyT1WLLnvi+8MPwoDWHBMEWDjuuFpc5P+Hz3iM3Ndb5mPZVOKfU93xnqj/2GxjDINb3q8PicJYUly2vkutZWURR1PdErtwz8+vloQPk+DWLAyMnjWb58ZUnhrsf3SJ9s8fl1TVWlwODzI/HaxrYFpscw1fscxY7Slc7Yc5LkatDhTpZE3YzH133+1EsP0RgGDNOPqm74cJWrtHRbond9Q0LVdSmsmWa4rf3Ffw4/QmMYMEyZ9rIy502u0hpDlRK6HtNN40BCjI68+IeBtndWp0xmU5VrpWttFdqiensff27QjIuxwf6+/Y13v0YjGDBNr25yrV3rqoL7t7fX1A/0Girs6Eqw7fcPfJlGMGCaMt+rdt7k3Natqwkjpmnm4BNpQ27o+fNLD7yL4xYt+/RxGjYPtimTKSxxqYluEOm63psaTBtB89tDfe2LeY7neW7xnT+ncXPkMT109aoaJaYaugY7CmxSj6UHU12haNPV4EFw3I00cpY8psWLVlcHIxFdVTUtFod9Lm0aO+/adSMVAZy1icZSmKb738fzSzY1yJCRYcBGF48qWpdW11j/AapBQMW203gMw7SVRG4ORBKaqsXjWjSqaRGldkvV5utIF8JqFazWB+kQRI5pK4eLyvPVElQbyqRF92rxDll0rK+pXQRd8LK+/6MbNtzidrvXHKOjgCtMTVTD8++uDet6J1RJaVOie5XglrK6xlrUYf3QOo8HLG6v1+uuOEwHXmHajs45w05Fhx3c0JRQOBRUAi7P+pprIJuPrHHY7cXwZ3eAraJ8Nqss01NLqANzTbumxLSIrijhnTvDQWepq+x6oVAQBAuCh7dgs9sryj10dJbpttmJYT7eDlWOaJEwiO5uuRlJLNDMcSgK3lBOjkeyE3Q8NW1fNk8D1WiD9YJnZ1gOB1sCH0MK2oO/LYIF0gO3RWgkBmJ6cG51yRk5vkbR1IgcDisxWWwoIX0ILBAEm2AjCPx7sIeYbpvLx3odmgLPCaFIREY/WGDnrYOM5sAqUNgJNkEgImRaTGN44YPF0AFYhJsDIXicS/I+EC2n3QBHc7LZYO0q0KXgtttmTdfijDhLMQAiGxxYINK3Ax6ccqcq3jCzVrBaWAKdOKNyckk56N5esJ3UBqLQrAGYHg531CGV5ENtuAEDuSDWVKCMvN5Kb6X7s9R0O8poZvZ4FB0n2MrqGhr8vjLSij5JnYnMDSpIqbLS66amZbOiOSB9PNzmqdtSVVhL2rAcXtCHTeVIVQl4yfQKrs0WoWuNDKLp2dZ5eCvVzkGSmlWRpMCEhtORxIqj8TEBH88ja4IoKfxrqAC2wbmxUG0O7id6NAM+no+9GMuo6hZs+gxZKQQaRTPMFjFMUCuaFlo/Mr2CJkgJReNPfIFfmRM+ZIBVFfhS+BLOCZWb3C7kPofLEkM0CNqQy4zKuwGZ7iTRWIURIPW3mt0MMyo0vYL7s64luCt4Hu6ZeR4EHcgAuaBYcJ0XZPATAC0ampyAJ0fHz0IGZTPXiFTgQiYyJwAnh+pNd4QsZrcjgDYB5Bir7BvAhB5vKCvUZ+F4vMQ4cB54EP0/C2ik9/TDBZmnyG6BGqHuWJR9XvqdD2yCXcq+Dna6JtpIYJ15QWB+5W6v+1P/B0gPXHqaGwimAAAAAElFTkSuQmCC'
-
-
-ICON_BASE64_LIST = [ICON_BASE64_BLOB_HEADACHE, ICON_BASE64_BLOB_PALM, ICON_BASE64_BLOB_PAT, ICON_BASE64_BLOB_THINK, ICON_BASE64_BLOB_THINK2, ICON_BASE64_BROW, ICON_BASE64_LEGO_THINK, ICON_BASE64_PALM, ICON_BASE64_THINK]
-
-def _random_error_icon():
-    return random.choice(ICON_BASE64_LIST)
-
-
-
-#                        d8b
-#                        Y8P
-#
-# 88888b.d88b.   8888b.  888 88888b.
-# 888 "888 "88b     "88b 888 888 "88b
-# 888  888  888 .d888888 888 888  888
-# 888  888  888 888  888 888 888  888
-# 888  888  888 "Y888888 888 888  888
 
 
 def main():
@@ -9737,10 +8574,6 @@ def main():
     # SetOptions(progress_meter_color=(COLOR_SYSTEM_DEFAULT))
     # SetOptions(element_padding=(0,0))
     # ------ Menu Definition ------ #
-
-    ver = version.split('\n')[0]
-
-
     menu_def = [['&File', ['!&Open::KeyOpen', '&Save::KeySave', '---', '&Properties::KeyProp', 'E&xit']],
                 ['&Edit', ['&Paste', ['Special::KeySpecial', '!Normal', ], 'Undo'], ],
                 ['!&Toolbar', ['Command &1', 'Command &2', 'Command &3', 'Command &4']],
@@ -9771,7 +8604,7 @@ def main():
                     key='_LISTBOX_', font='Courier 12', text_color='red',)],
         [Combo([1,2,3], size=(200, 35), tooltip='Combo', visible_items=2, key='_COMBO_')],
         [Spin([1, 2, 3], size=(40, 30), tooltip='Spinner', key='_SPIN1_')],
-        [Spin(['Spin item 1', 'Spin item 2', 'Spin item 3'], size=(240, 30), tooltip='Spinner', key='_SPIN2_')],
+        [Spin(['Combo item 1', 'Combo item 2', 'Combo item 3'], size=(240, 30), tooltip='Spinner', key='_SPIN2_')],
     ]
 
     frame3 = [
@@ -9780,7 +8613,7 @@ def main():
     ]
 
     frame4 = [
-        [Slider(range=(0, 100), tick_interval=None, orientation='v', size=(3, 30), default_value=40, tooltip='Slider'),
+        [Slider(range=(0, 100), orientation='v', size=(3, 30), default_value=40, tooltip='Slider'),
          Dial(range=(0, 100), tick_interval=1, resolution=1, size=(150, 150), default_value=40, tooltip='Dial'),
          Stretch()],
     ]
@@ -9807,17 +8640,16 @@ def main():
 
     layout = [
         [Menu(menu_def, key='_REALMENU_', background_color='white')],
-        [Text('You are running the PySimpleGUI.py file itself', font=('ANY', 15, 'Bold'), text_color='yellow')],
+        [Text('You are running the PySimpleGUI.py file itself', font=('ANY', 15, 'Bold'), text_color='red')],
                   [Text('You should be importing it rather than running it', font='ANY 15')],
-        [Text('VERSION {}'.format(ver), size=(85,1), text_color='yellow', font='ANY 18')],
+        [Text('VERSION {}'.format(__version__), size=(85,1), text_color='red', font='ANY 18')],
 
         # [Image(data_base64=logo, tooltip='Image', click_submits=True, key='_IMAGE_'),
-         [Frame('Input Text Group', frame1, title_color='yellow', tooltip='Text Group', frame_color='yellow', pad=(0,0)), Stretch()],
-        [Frame('Multiple Choice Group', frame2, title_color=theme_text_color(), frame_color='yellow'),
-         # Column([[Frame('Binary Choice Group', frame3, frame_color='white', title_color='white')]], pad=(0,0)),
-         Frame('Binary Choice Group', frame3, frame_color='white', title_color='white'),
+         [Frame('Input Text Group', frame1, title_color='red', tooltip='Text Group'), Stretch()],
+        [Frame('Multiple Choice Group', frame2, title_color='green'),
+         Frame('Binary Choice Group', frame3, title_color='purple'),
          Frame('Variable Choice Group', frame4, title_color='blue'), Stretch()],
-        [Frame('Structured Data Group', frame5, title_color='yellow'), ],
+        [Frame('Structured Data Group', frame5, title_color='red'), ],
         # [Frame('Graphing Group', frame6)],
         [TabGroup([[tab1, tab2]],title_color='black')],
         [ProgressBar(max_value=600, start_value=400, size=(600, 25), key='+PROGRESS+'),
@@ -9829,10 +8661,9 @@ def main():
 
     window = Window('Window Title', layout,
                        font=('Helvetica', 13),
-                       # default_button_element_size=(100, 30),
-                       # auto_size_buttons=False,
+                       default_button_element_size=(100, 30),
+                       auto_size_buttons=False,
                        default_element_size=(200, 22),
-                        margins = (40,40),
                        # border_depth=1,
                        )
     # graph_elem.DrawCircle((200, 200), 50, 'blue')
@@ -9854,12 +8685,12 @@ def main():
         if not graph_paused:
 
             if i < 600:
-                graph_elem.DrawLine((i, 0), (i, random.randint(0, 300)), width=1,
-                                    color='#{:06x}'.format(random.randint(0, 0xffffff)))
+                graph_elem.DrawLine((i, 0), (i, randint(0, 300)), width=1,
+                                    color='#{:06x}'.format(randint(0, 0xffffff)))
             else:
                 graph_elem.Move(-1, 0)
-                graph_elem.DrawLine((i, 0), (i, random.randint(0, 300)), width=1,
-                                    color='#{:06x}'.format(random.randint(0, 0xffffff)))
+                graph_elem.DrawLine((i, 0), (i, randint(0, 300)), width=1,
+                                    color='#{:06x}'.format(randint(0, 0xffffff)))
 
         window.FindElement('+PROGRESS+').UpdateBar(i % 600)
         window.FindElement('_PROGTEXT_').Update((i % 600) // 6)
