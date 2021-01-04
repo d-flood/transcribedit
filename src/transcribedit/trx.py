@@ -3,7 +3,6 @@ import json
 import os
 import pathlib
 import re
-# import PySimpleGUIWeb as sg
 import transcribedit.PySimpleGUIQt as sg
 import transcribedit.manage_token as mt
 from transcribedit.set_settings import set_settings
@@ -80,7 +79,8 @@ def witness_by_ref(ref: str, siglum: str, main_dir, settings: dict, icon):
     ref = ref.replace(' ', '')
     ref = ref.replace(':', '.')
     for i, verse in enumerate(all_verses):
-       if verse.startswith(ref):
+        verse_ref = verse.replace('.json', '')
+        if verse_ref == ref:
            return i, f'{settings["wits_dir"]}/{siglum}/{verse}'
 
 def load_witness(filename, siglum: str, window):
@@ -90,6 +90,9 @@ def load_witness(filename, siglum: str, window):
     return verse_dict
 
 def basetext_by_index(settings, index, direction, window):
+    if index is None:
+        sg.popup_quick_message('Basetext must be loaded before moving to adjacent verses.')
+        return
     basetext = open_basetext(settings['basetext_path'])
     if direction == 'Next>':
         index += 1
@@ -105,35 +108,28 @@ def hide_unused(window, start: int):
     for i in range(start, 151, 2):
         window[f'word{i}'].update(visible=False)
 
-def initial_verse_rows():
-    row1 = []
-    row2 = []
-    row3 = []
-    row4 = []
-    key = 2
-    for _ in range(20):
-        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
-        row1.append(sg.Stretch())
-        key += 2
-    for _ in range(20):
-        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
-        key += 2
-        row2.append(sg.Stretch())
-    for _ in range(20):
-        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
-        key += 2
-    for _ in range(20):
-        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
-        key += 2
-    return row1, row2, row3, row4
+def display_words_from_dict(tokens, window):
+    for i, token in zip(range(2, 151, 2), tokens):
+        marg_sigla = []
+        if 'marginale' in token:
+            marg_sigla.append('^')
+        if 'note' in token:
+            marg_sigla.append('*')
+        if 'corr_type' in token:
+            marg_sigla.append('`')
+        if marg_sigla != []:
+            word = f'{token["original"]}{"".join(marg_sigla)}'
+        else:
+            word = token['original']
+        window[f'word{i}'].update(value=word, visible=True)
+    return i
 
 def update_display_verse(verse_dict: dict, window, siglum, index: str):
     verse_words, hands = tt.get_words_from_dict(verse_dict, siglum)
-    if verse_words == []:
+    if verse_words == [] or verse_words is None:
         sg.popup_quick_message('That witness hand does not seem to exist.')
         return
-    for i, word in zip(range(2, 151, 2), verse_words):
-        window[f'word{i}'].update(value=word, visible=True)
+    i = display_words_from_dict(verse_words, window)
     hide_unused(window, i+2)
     mt.load_token(index, verse_dict, siglum, window)
     highlight_selected(window, f'word{index}')
@@ -186,8 +182,8 @@ def guard_token_values(values, icon):
         if values[k] == '':
             okay_popup('"Original", "Rule Match", and "Siglum" fields must be filled.', 'Forgetting something?', icon)
             return False
-    if values['-no_gap-'] is False and values['-gap_details-'] == '':
-        okay_popup('If "Gap After" or "Gap Before" are selected, then "Gap Details" must be filled.', 'One more thing...', icon)
+    if values['gap'] == 'no gap' and values['gap_details'] in ['', 'gap details']:
+        okay_popup('If "gap after" or "gap before" are selected, then "Gap Details" must be filled.', 'One more thing...', icon)
         return False
     return True
 
@@ -237,6 +233,28 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
             json.dump(get_metadata(siglum), file, indent=4)
     return f'{wit_folder}/{ref}.json'
 
+def initial_verse_rows():
+    row1 = []
+    row2 = []
+    row3 = []
+    row4 = []
+    key = 2
+    for _ in range(20):
+        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row1.append(sg.Stretch())
+        key += 2
+    for _ in range(20):
+        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        key += 2
+        row2.append(sg.Stretch())
+    for _ in range(20):
+        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        key += 2
+    for _ in range(20):
+        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        key += 2
+    return row1, row2, row3, row4
+
 def get_layout():
     menu = [['File', ['!Check for Updates', 'Settings', '---', 'Exit']]]
     
@@ -251,32 +269,32 @@ def get_layout():
                [sg.Multiline(size=(None, 8), key='-note-')]]
 
     main_info_col = [[sg.Text('Index'), sg.Input('', key='-index-', disabled=True, size_px=(170, 40))],
-                     [sg.Text('original'), sg.Input('', key='-original-')],
-                     [sg.Radio('No Gap', 'gap', default=True, key='-no_gap-')],
-                     [sg.Radio('Gap After', 'gap', key='-gap_after-'), sg.Radio('Gap Before', 'gap', key='-gap_before-')],
-                     [sg.Text('Gap Details'), sg.Input('', key='-gap_details-')]]
+                     [sg.Text('Original'), sg.Input('', key='-original-')],
+                     [sg.Text('Rule Match'), sg.Input('', key='-rule_match-')],
+                     [sg.Text('Collate'), sg.Input('', key='to_collate')]]
 
     values_col = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
                   [sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
-                  [sg.Text('Break'), sg.Combo(['after', 'before', 'split', None], readonly=True, size_px=(100, 40), key='break_place', enable_events=True), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num', size_px=(70, 40))],
-                  [sg.Text('Rule Match'), sg.Input('', key='-rule_match-')]]
+                  [sg.Combo(['no break', 'after', 'before', 'split'], readonly=True, size_px=(140, 40), key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num')],
+                  [sg.Combo(['no gap', 'gap after', 'gap before'], default_value='no gap', size_px=(170, 40), key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
 
-    values_col2 = [[sg.Text('Correction', justification='center')],
-                   [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-')],
+    corr_tip = 'For when the currently selected hand is NOT the first (*) hand'
+
+    values_col2 = [[sg.Text('Correction', justification='center', tooltip=corr_tip)],
+                   [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-', tooltip=corr_tip)],
                    [sg.Text('Type'), sg.Combo(['deletion', 'addition', 'substitution', None], readonly=True, size_px=(170, 40), key='-corr_type-')],
                    [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')],
                    [sg.Button('Submit Edits')]]
     
     values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-')],
-                   [sg.Combo(['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom', 'None'], default_value='None', size_px=(170, 40), readonly=True, key='marg_loc')],
-                #    [sg.Radio('left margin', 'marg', disabled=True, key='-l_marg-'), sg.Radio('right margin', 'marg', disabled=True, key='-r_marg-')], 
-                #    [sg.Radio('after word', 'marg', disabled=True, key='-marg_after-'), sg.Radio('above word', 'marg', disabled=True, key='-marg_above-')],
-                   [sg.Button('ϛ'), sg.Button('Ϙ'), sg.Button('⁘ +')],
+                   [sg.Combo(['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom', 'None'], default_value='None', size_px=(170, 40), readonly=True, key='marg_loc'),
+                              sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='marg_word_symbol', enable_events=True, readonly=True)],
+                #    [sg.Button('ϛ'), sg.Button('Ϙ'), sg.Button('⁘ +')],
                    [sg.Multiline('', key='-marg_tx-')]]
 
     edit_kv_frame = [[sg.Column(note_col), sg.Column(main_info_col), sg.Column(values_col), sg.Column(values_col2), sg.Column(values_col3)]]
 
-    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
+    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
                             [sg.Multiline('', key='-transcription-', size_px=(1700, 400), font=('Cambria', 14))]]
 
     verse_note_frame = [[sg.Text('Verse Notes', justification='center')],
@@ -301,9 +319,10 @@ def main():
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)
-    window = sg.Window(f'transcripEdIt   v{version}', layout, icon=icon)
+    window = sg.Window(f'transcripEdIt   v{version}', layout, icon=icon, return_keyboard_events=True)
     basetext_index = None
     verse_dict = None
+    word_index = None
 
     while True:
         event, values = window.read()
@@ -337,6 +356,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 continue
             try:
                 verse_dict = load_witness(wit_file, get_siglum_hand(values), window)
+                word_index = '2'
             except:
                 okay_popup('The file could not be loaded.', 'Bummer', icon)
 
@@ -346,10 +366,13 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event == 'Submit Verse':
             if values['-hand-'] == '*':
                 verse_dict = submit_verse(values, window, icon)
+                word_index = '2'
             elif verse_dict is not None:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
+                word_index = '2'
 
         elif event.startswith('word'):
+            word_index = event.replace('word', '')
             highlight_selected(window, event)
             mt.load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
 
@@ -361,12 +384,6 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 siglum = get_siglum_hand(values)
                 verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, siglum)
                 update_display_verse(verse_dict, window, siglum, values['-index-'])
-
-        # elif event == '-marg_type-':
-        #     if values['-marg_type-'] != '':
-        #         set_marg_radios(window, False)
-        #     else:
-        #         set_marg_radios(window, True)
 
         elif event == 'Save':
             if verse_dict is None:
@@ -389,15 +406,20 @@ Please set your witnesses output folder in settings by navigating to File>Settin
 
         elif event == '-symbol-' and values['-symbol-'] != 'Symbol':
             if values['-symbol-'] == 'underdot':
-                window['-transcription-'].update(value=f'\u0323', append=True)
+                window['-transcription-'].update(value='\u0323', append=True)
                 window['-symbol-'].update(set_to_index=0)
             else:
                 window['-symbol-'].update(set_to_index=0)
                 window['-transcription-'].update(value=f'{values["-symbol-"]}', append=True)
             window['-transcription-'].set_focus()
 
-        elif event in ['⁘ +', 'ϛ', 'Ϙ']:
-            window['-marg_tx-'].update(value=f'{event}', append=True)
+        elif event == 'marg_word_symbol' and values['marg_word_symbol'] != 'Symbol':
+            if values['marg_word_symbol'] == 'underdot':
+                window['-marg_tx-'].update(value='\u0323', append=True)
+                window['marg_word_symbol'].update(set_to_index=0)
+            else:
+                window['-marg_tx-'].update(value=values['marg_word_symbol'], append=True)
+                window['marg_word_symbol'].update(set_to_index=0)
             window['-marg_tx-'].set_focus()
 
         elif event == 'Update Verse Text':
@@ -406,5 +428,23 @@ Please set your witnesses output folder in settings by navigating to File>Settin
             else:
                 sg.popup_quick_message('First submit or load a verse')
 
-        # print(event, values)
+        elif event == '{':
+            if word_index not in [None, '2']:
+                i = int(word_index)-2
+                word_index = str(i)
+                word = f'word{word_index}'
+                highlight_selected(window, word)
+                mt.load_token(word_index, verse_dict, get_siglum_hand(values), window)
+
+        elif event == '}':
+            if word_index is not None:
+                i = int(word_index)+2
+                word = f'word{i}'
+                try:
+                    mt.load_token(word.replace('word', ''), verse_dict, get_siglum_hand(values), window)
+                    highlight_selected(window, word)
+                    word_index = word.replace('word', '')
+                except IndexError:
+                    pass
+
     window.close()

@@ -18,7 +18,7 @@ using certain scaling settings and high resolution monitors on Windows.
 
     app_settings_frame = [
         [sg.Text('Color Theme:'), sg.Combo(['Parchment', 'Dark Mode', 'Grey'], default_value=settings['theme'], size_px=(170, 40), key='-theme-', readonly=True)],
-        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Combo(['0', '1', '2', 'True', 'False'], size_px=(170, 40), key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)]
+        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Combo(['0', '1', '2', 'True'], size_px=(170, 40), key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)]
     ]
     return [
         [sg.Frame('Set Paths', paths_frame, border_width=5)],

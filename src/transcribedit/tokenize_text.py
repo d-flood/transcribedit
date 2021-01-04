@@ -8,7 +8,7 @@ def text_to_witness_dict(text: str, siglum: str):
     text = text.replace('\n', ' ')
     index = 2
     for word in text.split():
-        if word in ['·', ',', '.', ':', '※', '⁘', '+']:
+        if word in ['·', ',', '.', ':', '※', '⁘', '+', '...']:
             continue
         orig_word = word
         if '|' in word:
@@ -76,7 +76,8 @@ def get_words_from_dict(verse: dict, siglum: str):
     verse_words = []
     for wit in verse['witnesses']:
         if wit['id'] == siglum:
-            for token in wit['tokens']:
-                verse_words.append(token['original'])
-        hands.append(wit['id'])
+            verse_words = wit['tokens']
+        #     for token in wit['tokens']:
+        #         verse_words.append(token['original'])
+        # hands.append(wit['id'])
     return verse_words, hands
