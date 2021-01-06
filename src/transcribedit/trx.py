@@ -299,13 +299,13 @@ def get_layout():
                       sg.Column(values_col3)]]
 
     transcription_frame = [
-                           [sg.Button('  Load Basetext  '), s, 
-                            sg.Button('  Load Witness  '), s, 
-                            sg.Button('  Submit Verse  '), s, 
-                            sg.Button('  Update Verse Text  '), s,
-                            sg.Button('  Show Editing Options '), s, 
-                            sg.Button('  Hide Editing Options  '), s,
-                            sg.Button('  Save  '), s,
+                           [sg.Button('  Load Basetext  ', key='Load Basetext'), s, 
+                            sg.Button('  Load Witness  ', key='Load Witness'), s, 
+                            sg.Button('  Submit Verse  ', key='Submit Verse'), s, 
+                            sg.Button('  Update Verse Text  ', key='Update Verse Text'), s,
+                            sg.Button('  Show Editing Options ', key='Show Editing Options'), s, 
+                            sg.Button('  Hide Editing Options  ', key='Hide Editing Options'), s,
+                            sg.Button('  Save  ', key='Save'), s,
                             sg.Combo([' Symbol ', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], 
                                       key='-symbol-', enable_events=True, readonly=True)
                                       ],
