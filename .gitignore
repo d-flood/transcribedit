@@ -68,3 +68,4 @@ django/
 
 # user files
 settings.json
+output/

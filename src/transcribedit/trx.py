@@ -110,6 +110,7 @@ def hide_unused(window, start: int):
 
 def display_words_from_dict(tokens, window):
     for i, token in zip(range(2, 151, 2), tokens):
+        word = token['original']
         marg_sigla = []
         if 'marginale' in token:
             marg_sigla.append('^')
@@ -117,10 +118,12 @@ def display_words_from_dict(tokens, window):
             marg_sigla.append('*')
         if 'corr_type' in token:
             marg_sigla.append('`')
+        if 'break_after' in token:
+            marg_sigla.append('|')
+        elif 'break_before' in token:
+            word = f'|{word}'
         if marg_sigla != []:
-            word = f'{token["original"]}{"".join(marg_sigla)}'
-        else:
-            word = token['original']
+            word = f'{word}{"".join(marg_sigla)}'
         window[f'word{i}'].update(value=word, visible=True)
     return i
 
@@ -182,7 +185,7 @@ def guard_token_values(values, icon):
         if values[k] == '':
             okay_popup('"Original", "Rule Match", and "Siglum" fields must be filled.', 'Forgetting something?', icon)
             return False
-    if values['gap'] == 'no gap' and values['gap_details'] in ['', 'gap details']:
+    if values['gap'] not in ['no gap', ''] and values['gap_details'] in ['', '(gap details)']:
         okay_popup('If "gap after" or "gap before" are selected, then "Gap Details" must be filled.', 'One more thing...', icon)
         return False
     return True
@@ -196,12 +199,6 @@ def highlight_selected(window, event):
             continue
         window[f'word{key}'].update(background_color=sg.DEFAULT_BACKGROUND_COLOR)
         key += 2
-
-def set_marg_radios(window, setting: bool):
-    window['-l_marg-'].update(disabled=setting)
-    window['-r_marg-'].update(disabled=setting)
-    window['-marg_above-'].update(disabled=setting)
-    window['-marg_after-'].update(disabled=setting)
 
 def update_verse_and_marg(verse_dict: dict, values: dict):
     verse_dict['text'] = values['-transcription-']
@@ -275,32 +272,32 @@ def get_layout():
 
     values_col = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
                   [sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
-                  [sg.Combo(['no break', 'after', 'before', 'split'], readonly=True, size_px=(140, 40), key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num')],
-                  [sg.Combo(['no gap', 'gap after', 'gap before'], default_value='no gap', size_px=(170, 40), key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
+                  [sg.Combo(['', 'after', 'before', 'split'], readonly=True, size_px=(140, 40), key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num')],
+                  [sg.Combo(['', 'gap after', 'gap before'], default_value='no gap', size_px=(170, 40), key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
 
     corr_tip = 'For when the currently selected hand is NOT the first (*) hand'
 
     values_col2 = [[sg.Text('Correction', justification='center', tooltip=corr_tip)],
                    [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-', tooltip=corr_tip)],
-                   [sg.Text('Type'), sg.Combo(['deletion', 'addition', 'substitution', None], readonly=True, size_px=(170, 40), key='-corr_type-')],
-                   [sg.Text('Method'), sg.Combo(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under', None], readonly=True, size_px=(170, 40), key='-corr_method-')],
+                   [sg.Text('Type'), sg.Combo(['', 'deletion', 'addition', 'substitution'], readonly=True, size_px=(170, 40), key='-corr_type-')],
+                   [sg.Text('Method'), sg.Combo(['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], readonly=True, size_px=(170, 40), key='-corr_method-')],
                    [sg.Button('Submit Edits')]]
     
     values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-')],
-                   [sg.Combo(['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom', 'None'], default_value='None', size_px=(170, 40), readonly=True, key='marg_loc'),
-                              sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='marg_word_symbol', enable_events=True, readonly=True)],
+                   [sg.Combo(['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], default_value='', size_px=(170, 40), readonly=True, key='marg_loc'),
+                              sg.Combo(['Symbol', 'ϛ', 'Ϙ', '·', '⁘', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '–'], size_px=(170, 40), key='marg_word_symbol', enable_events=True, readonly=True)],
                 #    [sg.Button('ϛ'), sg.Button('Ϙ'), sg.Button('⁘ +')],
                    [sg.Multiline('', key='-marg_tx-')]]
 
     edit_kv_frame = [[sg.Column(note_col), sg.Column(main_info_col), sg.Column(values_col), sg.Column(values_col2), sg.Column(values_col3)]]
 
-    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
+    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
                             [sg.Multiline('', key='-transcription-', size_px=(1700, 400), font=('Cambria', 14))]]
 
     verse_note_frame = [[sg.Text('Verse Notes', justification='center')],
                         [sg.Multiline('', key='verse_note', size_px=(400, 150), font=('Cambria', 14))],
                         [sg.Text('Marginale Type', size_px=(180, 40)), sg.Input('', key='verse_marg_type', size_px=(220, 40))],
-                        [sg.Combo(['above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', size_px=(400, 40), readonly=True)],
+                        [sg.Combo(['', 'above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', size_px=(400, 40), readonly=True)],
                         [sg.Multiline('', size_px=(405, 150), key='verse_marg_tx')]]
 
     return [[sg.Menu(menu)],
@@ -408,6 +405,9 @@ Please set your witnesses output folder in settings by navigating to File>Settin
             if values['-symbol-'] == 'underdot':
                 window['-transcription-'].update(value='\u0323', append=True)
                 window['-symbol-'].update(set_to_index=0)
+            elif values['-symbol-'] == 'overline':
+                window['-transcription-'].update(value='\u0305', append=True)
+                window['-symbol-'].update(set_to_index=0)
             else:
                 window['-symbol-'].update(set_to_index=0)
                 window['-transcription-'].update(value=f'{values["-symbol-"]}', append=True)
@@ -416,6 +416,9 @@ Please set your witnesses output folder in settings by navigating to File>Settin
         elif event == 'marg_word_symbol' and values['marg_word_symbol'] != 'Symbol':
             if values['marg_word_symbol'] == 'underdot':
                 window['-marg_tx-'].update(value='\u0323', append=True)
+                window['marg_word_symbol'].update(set_to_index=0)
+            elif values['marg_word_symbol'] == 'overline':
+                window['-marg_tx-'].update(value='\u0305', append=True)
                 window['marg_word_symbol'].update(set_to_index=0)
             else:
                 window['-marg_tx-'].update(value=values['marg_word_symbol'], append=True)

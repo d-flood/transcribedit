@@ -1,4 +1,4 @@
-
+import re
  
 
 def text_to_witness_dict(text: str, siglum: str):
@@ -6,6 +6,7 @@ def text_to_witness_dict(text: str, siglum: str):
                'tokens': []}
     text = text.replace('-\n', '|')
     text = text.replace('\n', ' ')
+    text = re.sub(r'<(.+)>', '', text)
     index = 2
     for word in text.split():
         if word in ['·', ',', '.', ':', '※', '⁘', '+', '...']:
@@ -79,5 +80,5 @@ def get_words_from_dict(verse: dict, siglum: str):
             verse_words = wit['tokens']
         #     for token in wit['tokens']:
         #         verse_words.append(token['original'])
-        # hands.append(wit['id'])
+        hands.append(wit['id'])
     return verse_words, hands

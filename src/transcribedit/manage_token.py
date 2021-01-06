@@ -14,20 +14,15 @@ def load_token(index: str, verse: dict, siglum: str, window):
         window['-note-'].update(value=token['note'])
     else:
         window['-note-'].update(value='')
-    for i, brk in enumerate(['break_after', 'break_before', 'break_split']):
+    for brk in ['break_after', 'break_before', 'break_split']:
         if brk in token:
-            window['break_place'].update(set_to_index=i+1)
+            window['break_place'].update(values=['', 'after', 'before', 'split'], value=brk.replace('break_', ''))
             window['break_num'].update(value=token[brk][1])
-            if token[brk][0] == 'line':
-                window['break_type'].update(set_to_index=0)
-            elif token[brk][0] == 'column':
-                window['break_type'].update(set_to_index=1)
-            elif token[brk][0] == 'page':
-                window['break_type'].update(set_to_index=2)
+            window['break_type'].update(values=['', 'line', 'column', 'page'], value=token[brk][0])
             break
         else:
-            window['break_place'].update(set_to_index=0)
-            window['break_type'].update(set_to_index=3)
+            window['break_place'].update(values=['', 'after', 'before', 'split'], value='')
+            window['break_type'].update(values=['', 'line', 'column', 'page'], value='')
             window['break_num'].update(value='')
       
     if 'first_hand_rdg' in token:
@@ -35,26 +30,25 @@ def load_token(index: str, verse: dict, siglum: str, window):
     else:
         window['-first_hand_rdg-'].update(value='')
     if 'corr_type' in token:
-        for i, item in enumerate(['deletion', 'addition', 'substitution']):
+        for item in ['deletion', 'addition', 'substitution']:
             if token['corr_type'] == item:
-                window['-corr_type-'].update(set_to_index=i)
+                window['-corr_type-'].update(values=['', 'addition', 'deletion', 'substitution'], value=item)
     else:
-        window['-corr_type-'].update(set_to_index=3)
+        window['-corr_type-'].update(values=['', 'addition', 'deletion', 'substitution'], value='')
     if 'corr_method' in token:
-        for i, item in enumerate(['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under']):
+        for item in ['above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under']:
             if token['corr_method'] == item:
-                window['-corr_method-'].update(set_to_index=i)
+                window['-corr_method-'].update(values=['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], value=item)
     else:
-        window['-corr_method-'].update(set_to_index=7)
-    if 'gap_after' in token:
-        window['gap'].update(set_to_index=1)
-        window['gap_details'].update(value=token['gap_details'])
-    elif 'gap_before' in token:
-        window['gap'].update(set_to_index=2)
-        window['gap_details'].update(value=token['gap_details'])
-    else:
-        window['gap'].update(set_to_index=0)
-        window['gap_details'].update(value='gap details')
+        window['-corr_method-'].update(values=['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], value='')
+    for item in ['gap_after', 'gap_before']:
+        if item in token:
+            window['gap'].update(values=['', 'gap before', 'gap after'], value=item.replace('_', ' '))
+            window['gap_details'].update(value=token['gap_details'])
+            break
+        else:
+            window['gap'].update(values=['', 'gap before', 'gap after'], value='')
+            window['gap_details'].update(value='')
     if 'page' in token:
         window['-page-'].update(value=token['page'])
     else:
@@ -64,13 +58,13 @@ def load_token(index: str, verse: dict, siglum: str, window):
     else:
         window['-image_id-'].update(value='')
     if 'marginale' in token:
-        window['marg_loc'].update(values=['after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], value=token['marginale']['loc'].replace('_', ' '))
+        window['marg_loc'].update(values=['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], value=token['marginale']['loc'].replace('_', ' '))
         window['-marg_type-'].update(value=token['marginale']['marg_type'])
         window['-marg_tx-'].update(value=token['marginale']['marg_tx'])
     else:
         window['-marg_type-'].update(value='')
         window['-marg_tx-'].update(value='')
-        window['marg_loc'].update(set_to_index=8)
+        window['marg_loc'].update(values=['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], value='')
 
 def make_new_token(values, siglum_hand):
     rule_match = values['-rule_match-'].replace(' ', '').split(',')
@@ -83,18 +77,14 @@ def make_new_token(values, siglum_hand):
              "rule_match": rule_match,
              "t": values['to_collate']}
 
-    if values['break_place'] != 'no break':
+    if values['break_place'] != '':
         token[f'break_{values["break_place"]}'] = (values['break_type'], values['break_num'])
-    if values['-corr_type-'] != None:
+    if values['-corr_type-'] not in [None, '', 'no corr']:
         token['corr_type'] = values['-corr_type-']
-    if values['-corr_method-'] != None:
+    if values['-corr_method-'] not in [None, '']:
         token['corr_method'] = values['-corr_method-']
-    if values['gap'] != 'no gap':
+    if values['gap'] not in ['no gap', '']:
         token[f'{values["gap"].replace(" ", "_")}'] = True
-        # if values['-gap_after-'] is True:
-        #     token['gap_after'] = True
-        # elif values['-gap_before-'] is True:
-        #     token['gap_before'] = True
         token['gap_details'] = values['gap_details']
     for v in ['page', 'image_id', 'note', 'first_hand_rdg']:
         if values[f'-{v}-'] != '':
