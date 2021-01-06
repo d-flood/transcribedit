@@ -314,7 +314,8 @@ def get_layout():
     verse_note_frame = [
                         [sg.Multiline('', key='verse_note', font=('Cambria', 14))],
                         [sg.Text('Marginale Type'), s, sg.Input('', key='verse_marg_type')],
-                        [sg.Combo(['', 'above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', readonly=True)],
+                        [sg.Combo(['', 'above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', readonly=True), s,
+                            sg.Combo(['Symbol         ', 'ϛ', 'Ϙ', '·', '⁘', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '–'], key='marg_verse_symbol', enable_events=True, readonly=True)],
                         [sg.Multiline('', key='verse_marg_tx')]]
 
     layout = [[sg.Menu(menu)],
@@ -336,7 +337,7 @@ def main():
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)
-    window = sg.Window(f'transcripEdIt   v{version}', layout, icon=icon, return_keyboard_events=True)
+    window = sg.Window(f'transcribEdIt   v{version}', layout, icon=icon, return_keyboard_events=True)
     basetext_index = None
     verse_dict = None
     word_index = None
@@ -421,7 +422,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
         elif event == 'Settings':
             settings = set_settings(settings, main_dir, icon)
 
-        elif event == '-symbol-' and values['-symbol-'] != 'Symbol':
+        elif event == '-symbol-' and values['-symbol-'] != ' Symbol ':
             if values['-symbol-'] == 'underdot':
                 window['-transcription-'].update(value='\u0323', append=True)
                 window['-symbol-'].update(set_to_index=0)
@@ -433,7 +434,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
                 window['-transcription-'].update(value=f'{values["-symbol-"]}', append=True)
             window['-transcription-'].set_focus()
 
-        elif event == 'marg_word_symbol' and values['marg_word_symbol'] != 'Symbol':
+        elif event == 'marg_word_symbol' and values['marg_word_symbol'] != 'Symbol         ':
             if values['marg_word_symbol'] == 'underdot':
                 window['-marg_tx-'].update(value='\u0323', append=True)
                 window['marg_word_symbol'].update(set_to_index=0)
@@ -444,6 +445,18 @@ Please set your witnesses output folder in settings by navigating to File>Settin
                 window['-marg_tx-'].update(value=values['marg_word_symbol'], append=True)
                 window['marg_word_symbol'].update(set_to_index=0)
             window['-marg_tx-'].set_focus()
+
+        elif event == 'marg_verse_symbol' and not values['marg_verse_symbol'].startswith('Symbol'):
+            if values['marg_verse_symbol'] == 'underdot':
+                window['verse_marg_tx'].update(value='\u0323', append=True)
+                window['marg_verse_symbol'].update(set_to_index=0)
+            elif values['marg_verse_symbol'] == 'overline':
+                window['verse_marg_tx'].update(value='\u0305', append=True)
+                window['marg_verse_symbol'].update(set_to_index=0)
+            else:
+                window['verse_marg_tx'].update(value=values['marg_verse_symbol'], append=True)
+                window['marg_word_symbol'].update(set_to_index=0)
+            window['verse_marg_tx'].set_focus()
 
         elif event == 'Update Verse Text':
             if verse_dict is not None:
