@@ -17,8 +17,8 @@ using certain scaling settings and high resolution monitors on Windows.
     ]
 
     app_settings_frame = [
-        [sg.Text('Color Theme:'), sg.Combo(['Parchment', 'Dark Mode', 'Grey'], default_value=settings['theme'], size_px=(170, 40), key='-theme-', readonly=True)],
-        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Combo(['0', '1', '2', 'True'], size_px=(170, 40), key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)]
+        [sg.Text('Color Theme:'), sg.Stretch(), sg.Combo(['Parchment', 'Dark Mode', 'Grey'], default_value=settings['theme'], key='-theme-', readonly=True)],
+        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Stretch(), sg.Combo(['0', '1', '2', 'True'], key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)]
     ]
     return [
         [sg.Frame('Set Paths', paths_frame, border_width=5)],
@@ -47,7 +47,7 @@ def set_settings(settings, main_dir, icon):
     else:
         sg.theme(settings['theme'])
     layout = make_layout(settings)
-    window = sg.Window('Apparatus Explorer Settings', layout, icon=icon, size=(1000, 200))
+    window = sg.Window('Apparatus Explorer Settings', layout, icon=icon)
     window.finalize()
 
     while True:

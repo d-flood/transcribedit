@@ -39,7 +39,7 @@ except:
 
 def okay_or_cancel(message: str, title: str, icon):
     layout = [[sg.Text(message, pad=(10, 10))],
-        [sg.Button('Okay', size=(10, 2), pad=(10, 10), border_width=10), sg.Button('Cancel', size=(10, 2), pad=(10, 10), border_width=10)]]
+        [sg.Button('Okay', pad=(10, 10)), sg.Stretch(), sg.Button('Cancel', pad=(10, 10))]]
     popup = sg.Window(title, layout, icon=icon)
     response, _ = popup.read()
     popup.close()
@@ -47,7 +47,7 @@ def okay_or_cancel(message: str, title: str, icon):
 
 def okay_popup(message: str, title: str, icon):
     layout = [[sg.Text(message, pad=(10, 10))],
-        [sg.Button('Okay', pad=(10, 10), border_width=10)]]
+        [sg.Stretch(), sg.Button('Okay', pad=(10, 10)), sg.Stretch()]]
     popup = sg.Window(title, layout, icon=icon)
     popup.read()
     popup.close()
@@ -174,7 +174,7 @@ def submit_corrector_hand(verse_dict: dict, text: str, ref: str, siglum: str, wi
     return verse_dict
 
 def get_siglum_hand(values):
-    if values['-hand-'] != '*':
+    if values['-hand-'].strip() != '*':
         siglum = f'{values["-siglum-"]}{values["-hand-"]}'
     else:
         siglum = values['-siglum-']
@@ -237,22 +237,25 @@ def initial_verse_rows():
     row4 = []
     key = 2
     for _ in range(20):
-        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
         row1.append(sg.Stretch())
         key += 2
     for _ in range(20):
-        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
         key += 2
         row2.append(sg.Stretch())
     for _ in range(20):
-        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row3.append(sg.Stretch())
         key += 2
     for _ in range(20):
-        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 5)))
+        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row4.append(sg.Stretch())
         key += 2
     return row1, row2, row3, row4
 
 def get_layout():
+    s = sg.Stretch()
     menu = [['File', ['!Check for Updates', 'Settings', '---', 'Exit']]]
     
     submitted1, submitted2, submitted3, submitted4 = initial_verse_rows()
@@ -263,52 +266,69 @@ def get_layout():
                        submitted4]
 
     note_col = [[sg.Text('Word Note')],
-               [sg.Multiline(size=(None, 8), key='-note-')]]
+               [sg.Multiline('', key='-note-')]]
 
-    main_info_col = [[sg.Text('Index'), sg.Input('', key='-index-', disabled=True, size_px=(170, 40))],
-                     [sg.Text('Original'), sg.Input('', key='-original-')],
-                     [sg.Text('Rule Match'), sg.Input('', key='-rule_match-')],
-                     [sg.Text('Collate'), sg.Input('', key='to_collate')]]
+    main_info_col = [[sg.Text('Index'), s, sg.Input('', key='-index-', disabled=True)],
+                     [sg.Text('Original'), s, sg.Input('', key='-original-')],
+                     [sg.Text('Rule Match'), s, sg.Input('', key='-rule_match-')],
+                     [sg.Text('Collate'), s, sg.Input('', key='to_collate')]]
 
-    values_col = [[sg.Text('Image ID'), sg.Input('', size_px=(160, 40), key='-image_id-')],
-                  [sg.Text('Page'), sg.Input('', size_px=(160, 40), key='-page-')],
-                  [sg.Combo(['', 'after', 'before', 'split'], readonly=True, size_px=(140, 40), key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], size_px=(100, 40), key='break_type', readonly=True), sg.Input('', key='break_num')],
-                  [sg.Combo(['', 'gap after', 'gap before'], default_value='no gap', size_px=(170, 40), key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
+    values_col = [[sg.Text('Image ID'), s, sg.Input('', key='-image_id-')],
+                  [sg.Text('Page'), s, sg.Input('', key='-page-')],
+                  [sg.Text('Break'), s, sg.Combo(['', 'after', 'before', 'split'], readonly=True, key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], key='break_type', readonly=True), sg.Input('', key='break_num')],
+                  [sg.Combo(['', 'gap after', 'gap before'], default_value='no gap', key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
 
     corr_tip = 'For when the currently selected hand is NOT the first (*) hand'
 
     values_col2 = [[sg.Text('Correction', justification='center', tooltip=corr_tip)],
-                   [sg.Text('First Hand Reading'), sg.Input('', key='-first_hand_rdg-', tooltip=corr_tip)],
-                   [sg.Text('Type'), sg.Combo(['', 'deletion', 'addition', 'substitution'], readonly=True, size_px=(170, 40), key='-corr_type-')],
-                   [sg.Text('Method'), sg.Combo(['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], readonly=True, size_px=(170, 40), key='-corr_method-')],
+                   [sg.Text('First Hand Reading'), s, sg.Input('', key='-first_hand_rdg-', tooltip=corr_tip)],
+                   [sg.Text('Type'), s, sg.Combo(['', 'deletion', 'addition', 'substitution'], readonly=True, key='-corr_type-')],
+                   [sg.Text('Method'), s, sg.Combo(['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], readonly=True, key='-corr_method-')],
                    [sg.Button('Submit Edits')]]
     
-    values_col3 = [[sg.Text('Marginale Type'), sg.Input('', key='-marg_type-')],
-                   [sg.Combo(['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], default_value='', size_px=(170, 40), readonly=True, key='marg_loc'),
-                              sg.Combo(['Symbol', 'ϛ', 'Ϙ', '·', '⁘', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '–'], size_px=(170, 40), key='marg_word_symbol', enable_events=True, readonly=True)],
+    values_col3 = [[sg.Text('Marginale Type'), s, sg.Input('', key='-marg_type-')],
+                   [sg.Combo(['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], default_value='', readonly=True, key='marg_loc'),
+                              s, sg.Combo(['Symbol         ', 'ϛ', 'Ϙ', '·', '⁘', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '–'], key='marg_word_symbol', enable_events=True, readonly=True)],
                 #    [sg.Button('ϛ'), sg.Button('Ϙ'), sg.Button('⁘ +')],
                    [sg.Multiline('', key='-marg_tx-')]]
 
-    edit_kv_frame = [[sg.Column(note_col), sg.Column(main_info_col), sg.Column(values_col), sg.Column(values_col2), sg.Column(values_col3)]]
+    edit_kv_frame = [[sg.Column(note_col), sg.VerticalSeparator(), 
+                      sg.Column(main_info_col), sg.VerticalSeparator(), 
+                      sg.Column(values_col), sg.VerticalSeparator(), 
+                      sg.Column(values_col2), sg.VerticalSeparator(), 
+                      sg.Column(values_col3)]]
 
-    transcription_frame = [[sg.Button('Load Basetext'), sg.Button('Load Witness'), sg.Button('Submit Verse'), sg.Button('Update Verse Text'), sg.Button('Show Editing Options'), sg.Button('Hide Editing Options'), sg.Button('Save'), sg.Combo(['Symbol', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], size_px=(170, 40), key='-symbol-', enable_events=True, readonly=True)],
-                            [sg.Multiline('', key='-transcription-', size_px=(1700, 400), font=('Cambria', 14))]]
+    transcription_frame = [
+                           [sg.Button('  Load Basetext  '), s, 
+                            sg.Button('  Load Witness  '), s, 
+                            sg.Button('  Submit Verse  '), s, 
+                            sg.Button('  Update Verse Text  '), s,
+                            sg.Button('  Show Editing Options '), s, 
+                            sg.Button('  Hide Editing Options  '), s,
+                            sg.Button('  Save  '), s,
+                            sg.Combo([' Symbol ', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], 
+                                      key='-symbol-', enable_events=True, readonly=True)
+                                      ],
+                            [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
 
-    verse_note_frame = [[sg.Text('Verse Notes', justification='center')],
-                        [sg.Multiline('', key='verse_note', size_px=(400, 150), font=('Cambria', 14))],
-                        [sg.Text('Marginale Type', size_px=(180, 40)), sg.Input('', key='verse_marg_type', size_px=(220, 40))],
-                        [sg.Combo(['', 'above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', size_px=(400, 40), readonly=True)],
-                        [sg.Multiline('', size_px=(405, 150), key='verse_marg_tx')]]
+    verse_note_frame = [
+                        [sg.Multiline('', key='verse_note', font=('Cambria', 14))],
+                        [sg.Text('Marginale Type'), s, sg.Input('', key='verse_marg_type')],
+                        [sg.Combo(['', 'above', 'below', 'margin left', 'margin right', 'margin top', 'margin bottom'], key='verse_marg_loc', readonly=True)],
+                        [sg.Multiline('', key='verse_marg_tx')]]
 
-    return [[sg.Menu(menu)],
+    layout = [[sg.Menu(menu)],
             [sg.Frame('', submitted_frame, key='submitted_frame')],
-            [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-', pad=(0,0))],
-            [sg.Button('<Prev'), sg.Text('Reference'), sg.Input('', key='-ref-'), 
-                sg.Button('Next>'), sg.Text('Witness Siglum'), 
-                sg.Input('', key='-siglum-'), sg.Text('Hand'), 
-                sg.Combo(['*', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, size_px=(60, 40), key='-hand-', enable_events=True),
-                sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-')],
-            [sg.Frame('Transcription', transcription_frame, visible=True, pad=(0,0)), sg.Frame('', verse_note_frame, pad=(0,0))]]
+            [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-')],
+            [sg.HorizontalSeparator()],
+            [sg.Button('<Prev'), sg.Text('Reference'), sg.Input('', key='-ref-'),
+                sg.Button('Next>'), sg.VerticalSeparator(), sg.Text('Witness Siglum'),
+                sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Hand'),
+                sg.Combo(['*    ', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, key='-hand-', enable_events=True),
+                sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-'), sg.Stretch()],
+            [sg.Frame('Transcription', transcription_frame, visible=True), sg.Frame('Verse Notes', verse_note_frame)]]
+
+    return layout
 
 def main():
     version = 0.1
@@ -361,7 +381,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             basetext_index = basetext_by_index(settings, basetext_index, event, window)
 
         elif event == 'Submit Verse':
-            if values['-hand-'] == '*':
+            if values['-hand-'].strip() == '*':
                 verse_dict = submit_verse(values, window, icon)
                 word_index = '2'
             elif verse_dict is not None:
