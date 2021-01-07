@@ -1,23 +1,22 @@
 import re
- 
+
 
 def text_to_witness_dict(text: str, siglum: str):
     witness = {'id': siglum,
                'tokens': []}
     text = text.replace('-\n', '|')
     text = text.replace('\n', ' ')
-    print('Text before RE:')
-    print(text)
     text = re.sub(r'<([^α-ωΑ-Ω]+)>', '', text)
-    print('Text after RE:')
-    print(text)
     index = 2
     for word in text.split():
         if word in ['·', ',', '.', ':', '※', '⁘', '+', '...']:
             continue
         orig_word = word
-        if '|' in word:
-            word = word.replace('|', '')
+        word = word.replace('\u0323', '')
+        word = word.replace('\u0305', '')
+        word = word.replace('|', '')
+        word = word.replace('[', '')
+        word = word.replace(']', '')
         witness['tokens'].append({"index": f"{index}",
                                  "siglum": siglum,
                                  "reading": siglum,
