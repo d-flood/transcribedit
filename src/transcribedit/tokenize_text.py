@@ -6,7 +6,11 @@ def text_to_witness_dict(text: str, siglum: str):
                'tokens': []}
     text = text.replace('-\n', '|')
     text = text.replace('\n', ' ')
-    text = re.sub(r'<(.+)>', '', text)
+    print('Text before RE:')
+    print(text)
+    text = re.sub(r'<([^α-ωΑ-Ω]+)>', '', text)
+    print('Text after RE:')
+    print(text)
     index = 2
     for word in text.split():
         if word in ['·', ',', '.', ':', '※', '⁘', '+', '...']:
@@ -38,7 +42,7 @@ def orig_to_dict(values: dict):
                             'tx': values['verse_marg_tx']},
         'witnesses': [
             text_to_witness_dict(values["-transcription-"], values['-siglum-'])
-            ]
+                ]
             }
 
 def add_hand_to_dict(verse_dict: dict, text: str, siglum_hand):

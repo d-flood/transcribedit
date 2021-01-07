@@ -2,7 +2,11 @@ import transcribedit.tokenize_text as tt
 
 def load_token(index: str, verse: dict, siglum: str, window):
     index = int(index.replace('word', ''))
-    token = tt.get_token(index, verse, siglum)
+    try:
+        token = tt.get_token(index, verse, siglum)
+    except:
+        print('list index out of range')
+        return
     # necessary data
     window['-rule_match-'].update(value=', '.join(token['rule_match']))
     window['-index-'].update(value=index)

@@ -61,12 +61,15 @@ def get_basetext(ref, settings):
     for i, verse in enumerate(basetext):
         if verse.startswith(ref):
             return verse.replace(ref, '').strip(), i
+    return None, None
 
 def basetext_by_ref(main_dir: str, ref: str, window, settings: dict, icon):
     if ref in ['', None]:
         okay_popup('Type the reference for the unit to load into the "Reference" field.', 'Forget Something?', icon)
     else:
         basetext, index = get_basetext(ref.replace('.', ':'), settings)
+        if basetext is None:
+            sg.popup_quick_message(f'{ref} is not present in the basetext file.')
         window['-transcription-'].update(value=basetext)
         return index
 
@@ -130,6 +133,7 @@ def display_words_from_dict(tokens, window):
 def update_display_verse(verse_dict: dict, window, siglum, index: str):
     verse_words, hands = tt.get_words_from_dict(verse_dict, siglum)
     if verse_words == [] or verse_words is None:
+        print(verse_words)
         sg.popup_quick_message('That witness hand does not seem to exist.')
         return
     i = display_words_from_dict(verse_words, window)
@@ -361,7 +365,9 @@ def main():
                 okay_popup('In order to know which verse from the basetext to load,\n\
 the "Reference" field must be filled.', 'Silly Goose', icon)
                 continue
-            basetext_index = basetext_by_ref(main_dir, values['-ref-'], window, settings, icon)
+            new_vt_index = basetext_by_ref(main_dir, values['-ref-'], window, settings, icon)
+            if new_vt_index is not None:
+                basetext_index = new_vt_index
 
         elif event == 'Load Witness':
             if '' in [values['-ref-'], values['-siglum-']]:
