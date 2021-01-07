@@ -125,7 +125,7 @@ def display_words_from_dict(tokens, window):
         if marg_sigla != []:
             word = f'{word}{"".join(marg_sigla)}'
         window[f'word{i}'].update(value=word, visible=True)
-    return i
+    return i # type: ignore
 
 def update_display_verse(verse_dict: dict, window, siglum, index: str):
     verse_words, hands = tt.get_words_from_dict(verse_dict, siglum)
@@ -309,7 +309,7 @@ def get_layout():
                             sg.Combo([' Symbol ', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], 
                                       key='-symbol-', enable_events=True, readonly=True)
                                       ],
-                            [sg.Multiline('', key='-transcription-', size=(80, 10), font=('Cambria', 14))]]
+                            [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
 
     verse_note_frame = [
                         [sg.Multiline('', key='verse_note', font=('Cambria', 14))],
@@ -432,7 +432,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
             else:
                 window['-symbol-'].update(set_to_index=0)
                 window['-transcription-'].update(value=f'{values["-symbol-"]}', append=True)
-            window['-transcription-'].set_focus()
+            window['-transcription-'].set_focus() # pylint: disable=no-member
 
         elif event == 'marg_word_symbol' and values['marg_word_symbol'] != 'Symbol         ':
             if values['marg_word_symbol'] == 'underdot':
@@ -444,7 +444,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
             else:
                 window['-marg_tx-'].update(value=values['marg_word_symbol'], append=True)
                 window['marg_word_symbol'].update(set_to_index=0)
-            window['-marg_tx-'].set_focus()
+            window['-marg_tx-'].set_focus() # pylint: disable=no-member
 
         elif event == 'marg_verse_symbol' and not values['marg_verse_symbol'].startswith('Symbol'):
             if values['marg_verse_symbol'] == 'underdot':
@@ -456,7 +456,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
             else:
                 window['verse_marg_tx'].update(value=values['marg_verse_symbol'], append=True)
                 window['marg_word_symbol'].update(set_to_index=0)
-            window['verse_marg_tx'].set_focus()
+            window['verse_marg_tx'].set_focus() # pylint: disable=no-member
 
         elif event == 'Update Verse Text':
             if verse_dict is not None:
