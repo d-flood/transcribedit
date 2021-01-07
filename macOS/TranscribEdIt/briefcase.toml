@@ -1,0 +1,5 @@
+[paths]
+app_path = "TranscribEdIt.app/Contents/Resources/app"
+app_packages_path = "TranscribEdIt.app/Contents/Resources/app_packages"
+support_path = "TranscribEdIt.app/Contents/Resources/Support"
+icon = "TranscribEdIt.app/Contents/Resources/transcribedit.icns"
