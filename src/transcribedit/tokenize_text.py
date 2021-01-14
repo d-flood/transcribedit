@@ -1,6 +1,28 @@
 import re
 
 
+# def format_word(word):
+#     '''experimental function to format the word for the collation editor, including
+#     the normalization of nomina sacra'''
+#     nomina_sacra = {'θς': ['θεος'], 'θυ': ['θεου'], 'θω': ['θεω'], 'θν': ['θεον'],
+#                     'ις': ['ιησους']}
+#     word = word.replace('\u0323', '')
+#     word = word.replace('\u0305', '')
+#     word = word.replace('|', '')
+#     word = word.replace('[', '')
+#     word = word.replace(']', '')
+#     word = word.replace('(', '')
+#     word = word.replace(')', '')
+#     if word in ['·', ',', '.', ':', '※', '⁘', '+', '...', '~', '-']:
+#         return None
+#     if word.startswith('{'):
+#         return None
+#     if word in nomina_sacra:
+#         rule_match = nomina_sacra[word]
+#     else: 
+#         rule_match = [word]
+#     return word, rule_match
+
 def text_to_witness_dict(text: str, siglum: str):
     witness = {'id': siglum,
                'tokens': []}
@@ -9,14 +31,19 @@ def text_to_witness_dict(text: str, siglum: str):
     text = re.sub(r'<([^α-ωΑ-Ω]+)>', '', text)
     index = 2
     for word in text.split():
-        if word in ['·', ',', '.', ':', '※', '⁘', '+', '...']:
+        if word in ['·', ',', '.', ':', '※', '⁘', '+', '...', '~', '-']:
+            continue
+        if word.startswith('{'):
             continue
         orig_word = word
         word = word.replace('\u0323', '')
         word = word.replace('\u0305', '')
+        word = word.replace('\u0345', '')
         word = word.replace('|', '')
         word = word.replace('[', '')
         word = word.replace(']', '')
+        word = word.replace('(', '')
+        word = word.replace(')', '')
         witness['tokens'].append({"index": f"{index}",
                                  "siglum": siglum,
                                  "reading": siglum,

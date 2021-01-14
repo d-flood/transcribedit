@@ -40,15 +40,22 @@ except:
 def okay_or_cancel(message: str, title: str, icon):
     layout = [[sg.Text(message, pad=(10, 10))],
         [sg.Button('Okay', pad=(10, 10)), sg.Stretch(), sg.Button('Cancel', pad=(10, 10))]]
-    popup = sg.Window(title, layout, icon=icon)
-    response, _ = popup.read()
+    popup = sg.Window(title, layout, icon=icon, return_keyboard_events=True)
+    while True:
+        response, _ = popup.read()
+        if response in [sg.WINDOW_CLOSED, 'Cancel', 'special 16777216']: # special = Esc
+            response = 'Cancel'
+            break
+        elif response in ['Okay', 'special 16777220']: # special = Enter
+            response = 'Okay'
+            break
     popup.close()
     return response
 
 def okay_popup(message: str, title: str, icon):
     layout = [[sg.Text(message, pad=(10, 10))],
         [sg.Stretch(), sg.Button('Okay', pad=(10, 10)), sg.Stretch()]]
-    popup = sg.Window(title, layout, icon=icon)
+    popup = sg.Window(title, layout, icon=icon, return_keyboard_events=True)
     popup.read()
     popup.close()
 
@@ -92,7 +99,7 @@ def load_witness(filename, siglum: str, window):
     update_display_verse(verse_dict, window, siglum, '2')
     return verse_dict
 
-def basetext_by_index(settings, index, direction, window):
+def basetext_by_index(settings, index, direction, window, icon):
     if index is None:
         sg.popup_quick_message('Basetext must be loaded before moving to adjacent verses.')
         return
@@ -102,7 +109,14 @@ def basetext_by_index(settings, index, direction, window):
     elif direction == '<Prev':
         index -= 1
     basetext = basetext[index]
-    ref = re.search(r'[A-Za-z0-9]+ [0-9]+:[0-9]+', basetext).group(0).strip()
+    ref = re.search(r'[A-Za-z0-9 ]+:[0-9]+', basetext)
+    try:
+        ref = ref.group(0).strip()
+    except AttributeError:
+        okay_popup(f'The following line in the basetext file is not introduced with an SBL style reference:\n\
+"{basetext.strip()}"\nThis is probably a book title. Ideally, the basetext file\n\
+should contain only verses preceded by SBL references, e.g. "Rom 3:23"', 'Cannot Load Basetext', icon)
+        return index
     window['-transcription-'].update(value=basetext.replace(ref, '').strip())
     window['-ref-'].update(value=ref)
     return index
@@ -212,6 +226,8 @@ def update_verse_and_marg(verse_dict: dict, values: dict):
             'type': values['verse_marg_type'], 
             'loc': values['verse_marg_loc'], 
             'tx': values['verse_marg_tx']}
+    elif values['verse_marg_type'] == '' and 'verse_marginale' in verse_dict:
+        verse_dict.pop('verse_marginale')
     sg.popup_quick_message('Verse text and/or verse note updated')
     return verse_dict
 
@@ -233,6 +249,20 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
         with open(f'{wit_folder}/metadata.json', 'w') as file:
             json.dump(get_metadata(siglum), file, indent=4)
     return f'{wit_folder}/{ref}.json'
+
+def save(verse_dict: dict, values, icon):
+    if verse_dict is None:
+        okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
+        return
+    verse_dict = update_verse_and_marg(verse_dict, values)
+    saved_path = save_tx(verse_dict, values['-siglum-'], settings, values['-ref-'])
+    if saved_path is None:
+        okay_popup('The witnesses directory has not been set.\n\
+Please set your witnesses output folder in settings by navigating to File>Settings.', 'Witnesses Directory not Set', icon)
+        return verse_dict
+    okay_popup(f'JSON formatted transcription file was succesfully saved to\n\
+{saved_path}', 'Saved!', icon)
+    return verse_dict
 
 def initial_verse_rows():
     row1 = []
@@ -269,7 +299,7 @@ def get_layout():
                        submitted3,
                        submitted4]
 
-    note_col = [[sg.Text('Word Note')],
+    note_col = [[s, sg.Text('Word Note'), s],
                [sg.Multiline('', key='-note-')]]
 
     main_info_col = [[sg.Text('Index'), s, sg.Input('', key='-index-', disabled=True)],
@@ -279,7 +309,7 @@ def get_layout():
 
     values_col = [[sg.Text('Image ID'), s, sg.Input('', key='-image_id-')],
                   [sg.Text('Page'), s, sg.Input('', key='-page-')],
-                  [sg.Text('Break'), s, sg.Combo(['', 'after', 'before', 'split'], readonly=True, key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], key='break_type', readonly=True), sg.Input('', key='break_num')],
+                  [sg.Text('Break'), sg.Combo(['', 'after', 'before', 'split'], readonly=True, key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], key='break_type', readonly=True), sg.Input('', key='break_num', size_px=(120, 40))],
                   [sg.Combo(['', 'gap after', 'gap before'], default_value='no gap', key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
 
     corr_tip = 'For when the currently selected hand is NOT the first (*) hand'
@@ -310,7 +340,7 @@ def get_layout():
                             sg.Button('  Show Editing Options ', key='Show Editing Options'), s, 
                             sg.Button('  Hide Editing Options  ', key='Hide Editing Options'), s,
                             sg.Button('  Save  ', key='Save'), s,
-                            sg.Combo([' Symbol ', '·', '⁘ +', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020'], 
+                            sg.Combo([' Symbol ', '·', '⁘', 'ϛ', 'Ϙ', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '\u0345'], 
                                       key='-symbol-', enable_events=True, readonly=True)
                                       ],
                             [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
@@ -326,8 +356,8 @@ def get_layout():
             [sg.Frame('', submitted_frame, key='submitted_frame')],
             [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-')],
             [sg.HorizontalSeparator()],
-            [sg.Button('<Prev'), sg.Text('Reference'), sg.Input('', key='-ref-'),
-                sg.Button('Next>'), sg.VerticalSeparator(), sg.Text('Witness Siglum'),
+            [sg.Text('Reference'), sg.Input('', key='-ref-'),
+                sg.VerticalSeparator(), sg.Text('Witness Siglum'),
                 sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Hand'),
                 sg.Combo(['*    ', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, key='-hand-', enable_events=True),
                 sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-'), sg.Stretch()],
@@ -384,8 +414,11 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             except:
                 okay_popup('The file could not be loaded.', 'Bummer', icon)
 
-        elif event in ['<Prev', 'Next>']:
-            basetext_index = basetext_by_index(settings, basetext_index, event, window)
+        elif event == 'special 16777272':
+            basetext_index = basetext_by_index(settings, basetext_index, '<Prev', window, icon)
+
+        elif event == 'special 16777273':
+            basetext_index = basetext_by_index(settings, basetext_index, 'Next>', window, icon)
 
         elif event == 'Submit Verse':
             if values['-hand-'].strip() == '*':
@@ -394,39 +427,34 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             elif verse_dict is not None:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
                 word_index = '2'
+            # verse_dict = save(verse_dict, values, icon)
 
         elif event.startswith('word'):
             word_index = event.replace('word', '')
             highlight_selected(window, event)
             mt.load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
 
-        elif event == 'Submit Edits':
+        elif event in ['Submit Edits', 'special 16777266']:
             if verse_dict is None or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
                 continue
             if guard_token_values(values, icon) is True:
                 token = mt.make_new_token(values, get_siglum_hand(values))
                 siglum = get_siglum_hand(values)
                 verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, siglum)
+                
                 update_display_verse(verse_dict, window, siglum, values['-index-'])
 
-        elif event == 'Save':
-            if verse_dict is None:
-                okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
-                continue
-            saved_path = save_tx(verse_dict, values['-siglum-'], settings, values['-ref-'])
-            if saved_path is None:
-                okay_popup('The witnesses directory has not been set.\n\
-Please set your witnesses output folder in settings by navigating to File>Settings.', 'Witnesses Directory not Set', icon)
-                continue
-            okay_popup(f'JSON formatted transcription file was succesfully saved to\n\
-{saved_path}', 'Saved!', icon)
-
-        elif event == '-hand-':
-            if verse_dict is not None:
-                update_display_verse(verse_dict, window, get_siglum_hand(values), values['-index-'])
+        elif event in ['Save', 'special 16777264']:
+            verse_dict = save(verse_dict, values, icon)
 
         elif event == 'Settings':
             settings = set_settings(settings, main_dir, icon)
+
+        elif event == 'special 16777267': # F4
+            window['-transcription-'].update(value='·', append=True)
+
+        elif event == 'special 16777268': # F5
+            window['-transcription-'].update(value='\u0305', append=True)
 
         elif event == '-symbol-' and values['-symbol-'] != ' Symbol ':
             if values['-symbol-'] == 'underdot':
@@ -461,16 +489,16 @@ Please set your witnesses output folder in settings by navigating to File>Settin
                 window['marg_verse_symbol'].update(set_to_index=0)
             else:
                 window['verse_marg_tx'].update(value=values['marg_verse_symbol'], append=True)
-                window['marg_word_symbol'].update(set_to_index=0)
+                window['marg_verse_symbol'].update(set_to_index=0)
             window['verse_marg_tx'].set_focus() # pylint: disable=no-member
 
-        elif event == 'Update Verse Text':
+        elif event in ['Update Verse Text', 'special 16777265']:
             if verse_dict is not None:
                 verse_dict = update_verse_and_marg(verse_dict, values)
             else:
                 sg.popup_quick_message('First submit or load a verse')
 
-        elif event == '{':
+        elif event == 'special 16777274':
             if word_index not in [None, '2']:
                 i = int(word_index)-2
                 word_index = str(i)
@@ -478,7 +506,7 @@ Please set your witnesses output folder in settings by navigating to File>Settin
                 highlight_selected(window, word)
                 mt.load_token(word_index, verse_dict, get_siglum_hand(values), window)
 
-        elif event == '}':
+        elif event == 'special 16777275':
             if word_index is not None:
                 i = int(word_index)+2
                 word = f'word{i}'
@@ -489,4 +517,21 @@ Please set your witnesses output folder in settings by navigating to File>Settin
                 except IndexError:
                     pass
 
+        elif event == 'special 16777269': # F6
+            window['-marg_type-'].update(value='section number')
+            window['-marg_type-'].set_focus() # pylint: disable=no-member
+
+        # print(event)
     window.close()
+
+# special 16777216 = Esc
+# special 16777264 = F1
+# special 16777265 = F2
+# special 16777266 = F3
+# special 16777267 = F4
+# special 16777268 = F5
+# special 16777269 = F6
+# special 16777270 = F7
+# special 16777271 = F8
+# special 16777223 = Delete
+# special 16777220 = Enter
