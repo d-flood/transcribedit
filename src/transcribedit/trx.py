@@ -155,7 +155,10 @@ def update_display_verse(verse_dict: dict, window, siglum, index: str):
     mt.load_token(index, verse_dict, siglum, window)
     highlight_selected(window, f'word{index}')
     window['-hands-'].update(value=', '.join(hands))
-    window['-transcription-'].update(value=verse_dict['text'])
+    try:
+        window['-transcription-'].update(value=verse_dict['text'])
+    except KeyError:
+        window['-transcription-'].update(value='')
     try:
         window['verse_note'].update(value=verse_dict['verse_note'])
     except KeyError:

@@ -45,14 +45,23 @@ def load_token(index: str, verse: dict, siglum: str, window):
                 window['-corr_method-'].update(values=['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], value=item)
     else:
         window['-corr_method-'].update(values=['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], value='')
-    for item in ['gap_after', 'gap_before']:
-        if item in token:
-            window['gap'].update(values=['', 'gap before', 'gap after'], value=item.replace('_', ' '))
+    if 'gap_after' in token:
+        window['gap'].update(values=['', 'gap before', 'gap after'], value='gap after')
+        window['gap_details'].update(value=token['gap_details'])
+    elif 'gap_before' in token:
+        window['gap'].update(values=['', 'gap before', 'gap after'], value='gap before')
+        try:
+            window['gap_details'].update(value=token['gap_before_details'])
+        except:
             window['gap_details'].update(value=token['gap_details'])
-            break
-        else:
-            window['gap'].update(values=['', 'gap before', 'gap after'], value='')
-            window['gap_details'].update(value='')
+    # for item in ['gap_after', 'gap_before']:
+    #     if item in token:
+    #         window['gap'].update(values=['', 'gap before', 'gap after'], value=item.replace('_', ' '))
+    #         window['gap_details'].update(value=token['gap_details'])
+    #         break
+    else:
+        window['gap'].update(values=['', 'gap before', 'gap after'], value='')
+        window['gap_details'].update(value='')
     if 'page' in token:
         window['-page-'].update(value=token['page'])
     else:
@@ -89,7 +98,10 @@ def make_new_token(values, siglum_hand):
         token['corr_method'] = values['-corr_method-']
     if values['gap'] not in ['no gap', '']:
         token[f'{values["gap"].replace(" ", "_")}'] = True
-        token['gap_details'] = values['gap_details']
+        if values['gap'] == 'gap after':
+            token['gap_details'] = values['gap_details']
+        elif values['gap'] == 'gap before':
+            token['gap_before_details'] = values['gap_details']
     for v in ['page', 'image_id', 'note', 'first_hand_rdg']:
         if values[f'-{v}-'] != '':
             token[v] = values[f'-{v}-']
