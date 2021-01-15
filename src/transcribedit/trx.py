@@ -144,7 +144,7 @@ def display_words_from_dict(tokens, window):
         window[f'word{i}'].update(value=word, visible=True)
     return i # type: ignore
 
-def update_display_verse(verse_dict: dict, window, siglum, index: str):
+def update_display_verse(verse_dict: dict, window, siglum, index: str, first_load: bool=True):
     verse_words, hands = tt.get_words_from_dict(verse_dict, siglum)
     if verse_words == [] or verse_words is None:
         print(verse_words)
@@ -154,7 +154,9 @@ def update_display_verse(verse_dict: dict, window, siglum, index: str):
     hide_unused(window, i+2)
     mt.load_token(index, verse_dict, siglum, window)
     highlight_selected(window, f'word{index}')
-    window['-hands-'].update(value=', '.join(hands))
+    if first_load is True:
+        window['-hands-'].update(values=['          ']+hands, value=siglum)
+        window['list_hands'].update(value=', '.join(hands))
     try:
         window['-transcription-'].update(value=verse_dict['text'])
     except KeyError:
@@ -361,9 +363,12 @@ def get_layout():
             [sg.HorizontalSeparator()],
             [sg.Text('Reference'), sg.Input('', key='-ref-'),
                 sg.VerticalSeparator(), sg.Text('Witness Siglum'),
-                sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Hand'),
+                sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Add Hand'),
                 sg.Combo(['*    ', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, key='-hand-', enable_events=True),
-                sg.Text('Hands in Witness:'), sg.Input('', disabled=True, key='-hands-'), sg.Stretch()],
+                sg.Text('Hands in Witness:'),
+                sg.Input('', key='list_hands'),
+                sg.Combo(['          '], key='-hands-', readonly=True, enable_events=True), 
+                sg.Button('Select Hand'), sg.Stretch()],
             [sg.Frame('Transcription', transcription_frame, visible=True), sg.Frame('Verse Notes', verse_note_frame)]]
 
     return layout
@@ -412,7 +417,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 sg.popup_quick_message('No file found')
                 continue
             try:
-                verse_dict = load_witness(wit_file, get_siglum_hand(values), window)
+                verse_dict = load_witness(wit_file, values['-siglum-'], window)
                 word_index = '2'
             except:
                 okay_popup('The file could not be loaded.', 'Bummer', icon)
@@ -435,17 +440,19 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event.startswith('word'):
             word_index = event.replace('word', '')
             highlight_selected(window, event)
-            mt.load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
+            # mt.load_token(event.replace('word', ''), verse_dict, get_siglum_hand(values), window)
+            mt.load_token(event.replace('word', ''), verse_dict, values['-hands-'], window)
 
         elif event in ['Submit Edits', 'special 16777266']:
             if verse_dict is None or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
                 continue
             if guard_token_values(values, icon) is True:
-                token = mt.make_new_token(values, get_siglum_hand(values))
-                siglum = get_siglum_hand(values)
-                verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, siglum)
+                # token = mt.make_new_token(values, get_siglum_hand(values))
+                token = mt.make_new_token(values, values['-hands-'])
+                # siglum = get_siglum_hand(values)
+                verse_dict = tt.update_token(token, int(values['-index-']), verse_dict, values['-hands-'])
                 
-                update_display_verse(verse_dict, window, siglum, values['-index-'])
+                update_display_verse(verse_dict, window, values['-hands-'], values['-index-'])
 
         elif event in ['Save', 'special 16777264']:
             verse_dict = save(verse_dict, values, icon)
@@ -507,14 +514,14 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 word_index = str(i)
                 word = f'word{word_index}'
                 highlight_selected(window, word)
-                mt.load_token(word_index, verse_dict, get_siglum_hand(values), window)
+                mt.load_token(word_index, verse_dict, values['-hands-'], window)
 
         elif event == 'special 16777275':
             if word_index is not None:
                 i = int(word_index)+2
                 word = f'word{i}'
                 try:
-                    mt.load_token(word.replace('word', ''), verse_dict, get_siglum_hand(values), window)
+                    mt.load_token(word.replace('word', ''), verse_dict, values['-hands-'], window)
                     highlight_selected(window, word)
                     word_index = word.replace('word', '')
                 except IndexError:
@@ -524,7 +531,11 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             window['-marg_type-'].update(value='section number')
             window['-marg_type-'].set_focus() # pylint: disable=no-member
 
-        # print(event)
+        elif event == 'Select Hand' and values['-hands-'] != '          ':
+            update_display_verse(verse_dict, window, values['-hands-'], '2', first_load=False)
+
+
+        print(event)
     window.close()
 
 # special 16777216 = Esc
