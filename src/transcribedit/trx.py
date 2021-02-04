@@ -256,7 +256,7 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
     return f'{wit_folder}/{ref}.json'
 
 def save(verse_dict: dict, values, icon):
-    if verse_dict is None:
+    if verse_dict is {}:
         okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
         return
     verse_dict = update_verse_and_marg(verse_dict, values)
@@ -268,6 +268,14 @@ Please set your witnesses output folder in settings by navigating to File>Settin
     okay_popup(f'JSON formatted transcription file was succesfully saved to\n\
 {saved_path}', 'Saved!', icon)
     return verse_dict
+
+def fill_tx_from_tokens(verse_dict, siglum, window):
+    tokens, _ = tt.get_words_from_dict(verse_dict, siglum)
+    words = []
+    for token in tokens:
+        words.append(token['original'])
+    words = ' '.join(words)
+    window['-transcription-'].update(value=words)
 
 def initial_verse_rows():
     row1 = []
@@ -345,7 +353,7 @@ def get_layout():
                             sg.Button('  Show Editing Options ', key='Show Editing Options'), s, 
                             sg.Button('  Hide Editing Options  ', key='Hide Editing Options'), s,
                             sg.Button('  Save  ', key='Save'), s,
-                            sg.Combo([' Symbol ', '·', '⁘', 'ϛ', 'Ϙ', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '\u0345'], 
+                            sg.Combo(['Symbol       ', '·', '⁘', 'ϛ', 'Ϙ', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '\u0345'], 
                                       key='-symbol-', enable_events=True, readonly=True)
                                       ],
                             [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
@@ -364,11 +372,13 @@ def get_layout():
             [sg.Text('Reference'), sg.Input('', key='-ref-'),
                 sg.VerticalSeparator(), sg.Text('Witness Siglum'),
                 sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Add Hand'),
-                sg.Combo(['*    ', 'a', 'b', 'c', 'd', 'e', 'f'], readonly=True, key='-hand-', enable_events=True),
+                sg.Combo(['*    ', '*c', 'c1', 'c2', 'c3', 'c4', 'c5'], readonly=True, key='-hand-', enable_events=True),
                 sg.Text('Hands in Witness:'),
-                sg.Input('', key='list_hands'),
+                sg.Input('', key='list_hands', disabled=True),
                 sg.Combo(['          '], key='-hands-', readonly=True, enable_events=True), 
-                sg.Button('Select Hand'), sg.Stretch()],
+                sg.Button('Select Hand'),
+                sg.Button('Delete Selected Hand'),
+                sg.Button('Get Text from Tokens'), sg.Stretch()],
             [sg.Frame('Transcription', transcription_frame, visible=True), sg.Frame('Verse Notes', verse_note_frame)]]
 
     return layout
@@ -381,7 +391,7 @@ def main():
     settings = get_settings(main_dir)
     window = sg.Window(f'transcribEdIt   v{version}', layout, icon=icon, return_keyboard_events=True)
     basetext_index = None
-    verse_dict = None
+    verse_dict = {}
     word_index = None
 
     while True:
@@ -432,7 +442,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             if values['-hand-'].strip() == '*':
                 verse_dict = submit_verse(values, window, icon)
                 word_index = '2'
-            elif verse_dict is not None:
+            elif verse_dict is not {}:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
                 word_index = '2'
             # verse_dict = save(verse_dict, values, icon)
@@ -444,7 +454,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             mt.load_token(event.replace('word', ''), verse_dict, values['-hands-'], window)
 
         elif event in ['Submit Edits', 'special 16777266']:
-            if verse_dict is None or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
+            if verse_dict is {} or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
                 continue
             if guard_token_values(values, icon) is True:
                 # token = mt.make_new_token(values, get_siglum_hand(values))
@@ -466,7 +476,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event == 'special 16777268': # F5
             window['-transcription-'].update(value='\u0305', append=True)
 
-        elif event == '-symbol-' and values['-symbol-'] != ' Symbol ':
+        elif event == '-symbol-' and values['-symbol-'] != 'Symbol       ':
             if values['-symbol-'] == 'underdot':
                 window['-transcription-'].update(value='\u0323', append=True)
                 window['-symbol-'].update(set_to_index=0)
@@ -503,7 +513,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             window['verse_marg_tx'].set_focus() # pylint: disable=no-member
 
         elif event in ['Update Verse Text', 'special 16777265']:
-            if verse_dict is not None:
+            if verse_dict is not {}:
                 verse_dict = update_verse_and_marg(verse_dict, values)
             else:
                 sg.popup_quick_message('First submit or load a verse')
@@ -534,8 +544,14 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event == 'Select Hand' and values['-hands-'] != '          ':
             update_display_verse(verse_dict, window, values['-hands-'], '2', first_load=False)
 
+        elif event == 'Get Text from Tokens' and verse_dict is not None:
+            fill_tx_from_tokens(verse_dict, values['-hands-'], window)
 
-        print(event)
+        elif event == 'Delete Selected Hand' and len(verse_dict['witnesses']) > 1:
+            verse_dict = tt.delete_hand(verse_dict, values['-hands-'])
+            update_display_verse(verse_dict, window, verse_dict['witnesses'][0]['id'], '2', first_load=True)
+
+        # print(event)
     window.close()
 
 # special 16777216 = Esc

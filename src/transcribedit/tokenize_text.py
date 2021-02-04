@@ -35,10 +35,16 @@ def text_to_witness_dict(text: str, siglum: str):
             continue
         if word.startswith('{'):
             continue
-        orig_word = word
+        # orig_word = word # The CE documentation is misleading;
+        # it says that the "t" value is sent to CollateX, 
+        # but it is rather "original" that is collated. 
+        # It would be better if it displayed "original" but 
+        # collated "t"
+        word = word.lower()
         word = word.replace('\u0323', '')
         word = word.replace('\u0305', '')
         word = word.replace('\u0345', '')
+        word = word.replace('\u0308', '')
         word = word.replace('|', '')
         word = word.replace('[', '')
         word = word.replace(']', '')
@@ -47,7 +53,7 @@ def text_to_witness_dict(text: str, siglum: str):
         witness['tokens'].append({"index": f"{index}",
                                  "siglum": siglum,
                                  "reading": siglum,
-                                 "original": orig_word,
+                                 "original": word,
                                  "rule_match": [word],
                                  "t": word})
         index += 2
@@ -74,6 +80,12 @@ def orig_to_dict(values: dict):
 def add_hand_to_dict(verse_dict: dict, text: str, siglum_hand):
     hand_dict = text_to_witness_dict(text, siglum_hand)
     verse_dict['witnesses'].append(hand_dict)
+    return verse_dict
+
+def delete_hand(verse_dict: dict, siglum):
+    for i, wit in enumerate(verse_dict['witnesses']):
+        if wit['id'] == siglum:
+            verse_dict['witnesses'].pop(i)
     return verse_dict
 
 def update_witness_dict(verse_dict: dict, text: str, siglum: str, values: dict):
