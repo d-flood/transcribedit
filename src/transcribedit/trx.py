@@ -157,10 +157,19 @@ def update_display_verse(verse_dict: dict, window, siglum, index: str, first_loa
     if first_load is True:
         window['-hands-'].update(values=['          ']+hands, value=siglum)
         window['list_hands'].update(value=', '.join(hands))
-    try:
-        window['-transcription-'].update(value=verse_dict['text'])
-    except KeyError:
-        window['-transcription-'].update(value='')
+    found_tx = False
+    for wit in verse_dict['witnesses']:
+        if wit['id'] == siglum:
+            try:
+                window['-transcription-'].update(value=wit['text'])
+                found_tx = True
+            except KeyError:
+                pass
+    if not found_tx: #this block is for backwards compatibility
+        try:
+            window['-transcription-'].update(value=verse_dict['text'])
+        except KeyError:
+            window['-transcription-'].update(value='')
     try:
         window['verse_note'].update(value=verse_dict['verse_note'])
     except KeyError:
@@ -223,8 +232,11 @@ def highlight_selected(window, event):
         window[f'word{key}'].update(background_color=sg.DEFAULT_BACKGROUND_COLOR)
         key += 2
 
-def update_verse_and_marg(verse_dict: dict, values: dict):
-    verse_dict['text'] = values['-transcription-']
+def update_verse_and_marg(verse_dict: dict, values: dict, hand: str):
+    for wit in verse_dict['witnesses']:
+        if wit['id'] == hand:
+            wit['text'] = values['-transcription-']
+    # verse_dict['text'] = values['-transcription-']
     verse_dict['verse_note'] = values['verse_note']
     if values['verse_marg_type'] != '':
         verse_dict['verse_marginale'] = {
@@ -259,7 +271,7 @@ def save(verse_dict: dict, values, icon):
     if verse_dict is {}:
         okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
         return
-    verse_dict = update_verse_and_marg(verse_dict, values)
+    verse_dict = update_verse_and_marg(verse_dict, values, values['-hands-'])
     saved_path = save_tx(verse_dict, values['-siglum-'], settings, values['-ref-'])
     if saved_path is None:
         okay_popup('The witnesses directory has not been set.\n\
@@ -514,7 +526,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event in ['Update Verse Text', 'special 16777265']:
             if verse_dict is not {}:
-                verse_dict = update_verse_and_marg(verse_dict, values)
+                verse_dict = update_verse_and_marg(verse_dict, values, values['-hands-'])
             else:
                 sg.popup_quick_message('First submit or load a verse')
 

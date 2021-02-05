@@ -25,6 +25,7 @@ import re
 
 def text_to_witness_dict(text: str, siglum: str):
     witness = {'id': siglum,
+               'text': text,
                'tokens': []}
     text = text.replace('-\n', '|')
     text = text.replace('\n', ' ')
