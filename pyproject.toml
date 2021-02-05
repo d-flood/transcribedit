@@ -1,5 +1,5 @@
 [tool.briefcase]
-project_name = "TranscribEdIt"
+project_name = "TranscribEdit"
 bundle = "org.dflood.transcribedit"
 version = "0.1"
 url = "https://transcribedit.dflood.org/transcribedit"
@@ -8,8 +8,8 @@ author = 'David Flood, II'
 author_email = "davidfloodii@gmail.com"
 
 [tool.briefcase.app.transcribedit]
-formal_name = "TranscribEdIt"
-description = "a manuscript transcription tool for producing tokenized JSON transcription files"
+formal_name = "TranscribEdit"
+description = "a manuscript transcription tool for producing tokenized JSON transcription files ready to be used with the ITSEE collation editor."
 icon = "src/transcribedit/resources/transcribedit"
 sources = ['src/transcribedit']
 requires = ["PySide2",
