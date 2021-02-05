@@ -2,7 +2,7 @@
 project_name = "TranscribEdit"
 bundle = "org.dflood.transcribedit"
 version = "0.1"
-url = "https://transcribedit.dflood.org/transcribedit"
+url = "https://github.com/d-flood/transcribedit"
 license = "MIT license"
 author = 'David Flood, II'
 author_email = "davidfloodii@gmail.com"

@@ -401,7 +401,7 @@ def main():
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)
-    window = sg.Window(f'transcribEdIt   v{version}', layout, icon=icon, return_keyboard_events=True)
+    window = sg.Window(f'TranscribEdit   v{version}', layout, icon=icon, return_keyboard_events=True)
     basetext_index = None
     verse_dict = {}
     word_index = None
