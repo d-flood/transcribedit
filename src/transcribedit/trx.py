@@ -268,7 +268,7 @@ def save_tx(verse_dict: dict, siglum: str, settings: dict, ref: str):
     return f'{wit_folder}/{ref}.json'
 
 def save(verse_dict: dict, values, icon):
-    if verse_dict is {}:
+    if verse_dict == {}:
         okay_popup('There is no submitted verse to save.', 'No Submitted Verse', icon)
         return
     verse_dict = update_verse_and_marg(verse_dict, values, values['-hands-'])
@@ -454,7 +454,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             if values['-hand-'].strip() == '*':
                 verse_dict = submit_verse(values, window, icon)
                 word_index = '2'
-            elif verse_dict is not {}:
+            elif verse_dict != {}:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
                 word_index = '2'
             # verse_dict = save(verse_dict, values, icon)
@@ -466,7 +466,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             mt.load_token(event.replace('word', ''), verse_dict, values['-hands-'], window)
 
         elif event in ['Submit Edits', 'special 16777266']:
-            if verse_dict is {} or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
+            if verse_dict == {} or okay_or_cancel('Replace current token with new values?', 'Double-checking with you', icon) == 'Cancel':
                 continue
             if guard_token_values(values, icon) is True:
                 # token = mt.make_new_token(values, get_siglum_hand(values))
@@ -525,7 +525,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             window['verse_marg_tx'].set_focus() # pylint: disable=no-member
 
         elif event in ['Update Verse Text', 'special 16777265']:
-            if verse_dict is not {}:
+            if verse_dict != {}:
                 verse_dict = update_verse_and_marg(verse_dict, values, values['-hands-'])
             else:
                 sg.popup_quick_message('First submit or load a verse')
@@ -556,10 +556,10 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event == 'Select Hand' and values['-hands-'] != '          ':
             update_display_verse(verse_dict, window, values['-hands-'], '2', first_load=False)
 
-        elif event == 'Get Text from Tokens' and verse_dict is not None:
+        elif event == 'Get Text from Tokens' and verse_dict != {}:
             fill_tx_from_tokens(verse_dict, values['-hands-'], window)
 
-        elif event == 'Delete Selected Hand' and len(verse_dict['witnesses']) > 1:
+        elif event == 'Delete Selected Hand' and verse_dict != {} and len(verse_dict['witnesses']) > 1:
             verse_dict = tt.delete_hand(verse_dict, values['-hands-'])
             update_display_verse(verse_dict, window, verse_dict['witnesses'][0]['id'], '2', first_load=True)
 
