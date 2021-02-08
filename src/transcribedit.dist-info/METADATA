@@ -1,10 +1,10 @@
 Metadata-Version: 2.1
 Briefcase-Version: 0.3.3
 Name: transcribedit
-Formal-Name: TranscribEdIt
+Formal-Name: TranscribEdit
 App-ID: org.dflood.transcribedit.transcribedit
 Version: 0.0.1
-Home-page: https://transcribedit.dflood.org/transcribedit
-Author: David Flood, II
+Home-page: https://githttps://github.com/d-flood/transcribedit
+Author: David A Flood
 Author-email: davidfloodii@gmail.com
-Summary: a manuscript transcription tool for producing pre-tokenized JSON transcription files
+Summary: Create, view, and edit pre-tokenized transcriptions; an alternative to XML TEI

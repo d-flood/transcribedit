@@ -414,7 +414,7 @@ def get_layout(settings: dict):
     return layout
 
 def main():
-    version = 0.1
+    version = 0.2
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)

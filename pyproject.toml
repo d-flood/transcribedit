@@ -1,7 +1,7 @@
 [tool.briefcase]
 project_name = "TranscribEdit"
 bundle = "org.dflood.transcribedit"
-version = "0.1"
+version = "0.2"
 url = "https://github.com/d-flood/transcribedit"
 license = "MIT license"
 author = 'David Flood, II'
@@ -12,8 +12,9 @@ formal_name = "TranscribEdit"
 description = "a manuscript transcription tool for producing tokenized JSON transcription files ready to be used with the ITSEE collation editor."
 icon = "src/transcribedit/resources/transcribedit"
 sources = ['src/transcribedit']
-requires = ["PySide2",
-            "PySimpleGUIQt"]
+requires = ["natsort",
+            "PySide2",
+            "PySimpleGUIQt",]
 
 
 [tool.briefcase.app.transcribedit.macOS]
