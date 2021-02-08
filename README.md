@@ -7,7 +7,7 @@ This is a transcription editor developed specifically for preparing transcriptio
 
 TranscribEdit is basically an alternative to available WYSIWYG XML TEI text editors. Transforming XML TEI encoded transcription files to the tokenized JSON format required by the Collation Editor was too labor intensive for my workflow. This is an app to work natively in a compatible JSON format. It is also developed under the assumption that, if desired, it will be much easier to add a function for converting the tokenized JSON into valid TEI XML. Since TEI is still the standard in Digital Humanities around the world, I hope to add a 'JSON to TEI' export function eventually.
 
-The strength of this editor is that it produces and retrieves transcriptions files that require no conversion at all to be used with the collation editor. Perhaps the biggest drawback of this editor is that it was developed to transcribe one verse at a time. A near-future goal is to display and export a 'page view' (if the user has chosen to encode page breaks and page numbers).
+The strength of this editor is that it produces and retrieves transcriptions files that require no conversion at all to be used with the collation editor. Perhaps the biggest drawback of this editor is that it was developed to transcribe one verse at a time. A full-chapter view can be enabled from the settings menu, but this is for viewing and copying, not for editing.
 
 I use this editor daily for my doctoral research and so it is being actively improved as I think of useful features that help with my own research.
 
@@ -36,11 +36,16 @@ This will open a small settings window.
 ![](images/tx_box.png)
 The transcription text box is where the manuscript transcription is typed. It can be treated like a plain text editor, but there are a few helpful features:
 - Words that are split over a break: When a word is split due to a line break, column break, or page break, simply type a hyphen ("-") where the break appears and hit Enter to move to a new line. If this convention is used, then the word will be correctly rejoined when it is sent to the Collation Editor.
-- Any non-Greek text enclosed in angle brackets like \<this\> will be ignored. It is helpful for any notes the user would like to make such as marking the position and number of commentary lines or the place of a page/column break.
-- Anything enclosed in curly braces like {this} will also be ignored as far as collation is concerned. This can be useful for marking lacunae. 
-- Words and characters enclosed in square brackets like [this] and th[is] _are_ sent to the Collation Editor because the Collation Editor can be toggled to ignore or not ignore supplied and unclear readings.
+- Any text enclosed in angle brackets like \<this\> will be ignored. It is helpful for any notes the user would like to make such as marking the position and number of commentary lines or the place of a page/column break.
+- Anything enclosed in curly braces like {this} will also be ignored as far as collation is concerned. It is offered to the user as another way to embed notes directly in the transcription that will not affect collation. 
 - Commonly needed special characters have shortcuts. F4 inserts a Greek high dot and F5 inserts an overline. These only work for the transcription text box.
 - All punctuation should have a space before and after so that it can be ignored for the purpose of collation.
+- Helpful markup shortcuts: There are a few built in ways to automatically encode gaps and breaks so that they do not need to be manually entered using the token editor.
+  - Simple line breaks will be automatically encoded when the final word of a line is followed by a space *and* a new line. For line breaks that split words, simply type hyphen "-", then enter a new line (with Enter or Return).
+  - Column breaks and page breaks work the same but with the addition of `<cb>` or `<pb>` (respectively) as the first word of the next line. The sudo XML element should be followed by a space before the first word of the new line. 
+  - Split words can be automatically encoded by using hyphen, *no space*, a new line, one of the above tags indicating a column break or page break, followed by the rest of the word. There should be no spaces between the first half of the word and the second half.
+  - Alternative to `<cb>` and `<pb>` is `P|` and `C|`, and `-C-` and `-P-` for split words. The user should choose whichever they find most readable.
+  - Gaps are automatically encoded whenever an entire word or group of words is enclosed in square brackets like [this]. If a word is partially reconstructed like th[is], then the word *is* sent for collation.
   
 ### Transcription Box Buttons from Left to Right
 - 'Load Basetext': This will insert a verse from a basetext file. The basetext can be edited to match the witness being transcribed. See "Setting up the Basetext File" below for more info.
@@ -57,7 +62,15 @@ The transcription text box is where the manuscript transcription is typed. It ca
 When words are submitted from the transcription box, they are converted to JSON tokens. Each token can have any number of the values from the 'Edit Data' frame. Each token has one word.
 - The user can click on a word to select that token, or cycle to the previous one or next one with F11 and F12. 
 - The token words show exactly what is going to be sent to the Collation Editor. If something doesn't look right, edit the text in the transcription box and resubmit the verse. This immediate feedback of how split words are joined (among other things) is one of the useful features.
-- If a note has been saved for a word, the word will be shown with an asterisk "*"; if a break has been encoded for the word, then a bar "|" will be shown next to the word; if any marginalia have been transcribed for the word, a backtick "`" will be shown with the word. This is to help the user see which words might have important encodings to investigate. 
+- There are a few different characters that will be displayed before or after a word to give the user a quick sense of what kinds of data are encoded for that word.
+  - " \* ": An asterisk indicates that a word note has been saved for the word.
+  - " ^ ": A carat indicates that a marginal note has been saved for the word.
+  - " ` ": A carat indicates that correction has been saved for the word.
+  - " | ": A bar indicates that there is a break before, after, or splitting the word. A bar by itself indicates a line break while the location of the bar communicates whether the break is before, in, or after the word.
+  - " P| ": Page break
+  - " C| ": Column break
+  - " -C- ": Word split on a column break
+  - " -P- ": Word split on a page break
 
 ### Edit Token Options frame
 ![](images/edit_tokens.png)
