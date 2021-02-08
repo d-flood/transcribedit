@@ -18,7 +18,8 @@ def get_settings(main_dir: str):
         settings = {"wits_dir": "",
                     "basetext_path": "",
                     "theme": "Parchment",
-                    "font": "Cambria 12",
+                    "font": ("Gill Sanz MT", 12),
+                    "tx_font": ("Cambria", 12),
                     "dpi": True,
                     "enable_chapter_view": True}
         with open(f'{main_dir}/resources/settings.json', 'w') as file:
@@ -27,7 +28,7 @@ def get_settings(main_dir: str):
 
 main_dir = pathlib.Path(__file__).parent.as_posix()
 settings = get_settings(main_dir)
-sg.set_options(font=settings['font'])
+sg.set_options(font=settings['font'], element_padding=(1,1))
 if settings['theme'] == 'Grey':
     sg.theme('LightGrey2')
 else:
@@ -129,7 +130,10 @@ def hide_unused(window, start: int):
 
 def display_words_from_dict(tokens, window):
     for i, token in zip(range(2, 151, 2), tokens):
-        word = token['original']
+        try:
+            word = token['raw_word']
+        except KeyError:
+            word = token['original']
         marg_sigla = []
         if 'marginale' in token:
             marg_sigla.append('^')
@@ -137,10 +141,6 @@ def display_words_from_dict(tokens, window):
             marg_sigla.append('*')
         if 'corr_type' in token:
             marg_sigla.append('`')
-        if 'break_after' in token:
-            marg_sigla.append('|')
-        elif 'break_before' in token:
-            word = f'|{word}'
         if marg_sigla != []:
             word = f'{word}{"".join(marg_sigla)}'
         window[f'word{i}'].update(value=word, visible=True)
@@ -300,26 +300,26 @@ def load_chapter(window, siglum, ref, wit_dir, settings):
         chapter = '<<could not load chapter>>'
     window['chapter_tab'].update(value=chapter)
 
-def initial_verse_rows():
+def initial_verse_rows(font):
     row1 = []
     row2 = []
     row3 = []
     row4 = []
     key = 2
     for _ in range(20):
-        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row1.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3), font=font))
         row1.append(sg.Stretch())
         key += 2
     for _ in range(20):
-        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row2.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3), font=font))
         key += 2
         row2.append(sg.Stretch())
     for _ in range(20):
-        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row3.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3), font=font))
         row3.append(sg.Stretch())
         key += 2
     for _ in range(20):
-        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3)))
+        row4.append(sg.Text('', visible=False, key=f'word{key}', justification='left', enable_events=True, pad=(2, 3), font=font))
         row4.append(sg.Stretch())
         key += 2
     return row1, row2, row3, row4
@@ -328,7 +328,7 @@ def get_layout(settings: dict):
     s = sg.Stretch()
     menu = [['File', ['!Check for Updates', 'Settings', '---', 'Exit']]]
     
-    submitted1, submitted2, submitted3, submitted4 = initial_verse_rows()
+    submitted1, submitted2, submitted3, submitted4 = initial_verse_rows(settings['tx_font'])
 
     submitted_frame = [submitted1,
                        submitted2,
@@ -379,10 +379,10 @@ def get_layout(settings: dict):
                             sg.Button('  Save  ', key='Save'), s,
                             sg.Combo(['Symbol       ', '·', '⁘', 'ϛ', 'Ϙ', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '\u0345'], 
                                       key='-symbol-', enable_events=True, readonly=True)],
-                            [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
+                            [sg.Multiline('', key='-transcription-', font=settings['tx_font'])]]
                             
     if settings['enable_chapter_view'] is True:
-        chapter_tab = [[sg.MultilineOutput('', key='chapter_tab', font=('Cambria', 12))]]
+        chapter_tab = [[sg.MultilineOutput('', key='chapter_tab', font=settings['tx_font'])]]
         tab_layout = [[sg.Tab('Transcription', transcription_frame), sg.Tab('View Chapter', chapter_tab)]]
         transcription_frame = sg.TabGroup(tab_layout)
     else:
@@ -398,7 +398,7 @@ def get_layout(settings: dict):
     layout = [[sg.Menu(menu)],
             [sg.Frame('', submitted_frame, key='submitted_frame')],
             [sg.Frame('Edit Data', edit_kv_frame, visible=True, key='-edit_frame-')],
-            [sg.HorizontalSeparator()],
+            # [sg.HorizontalSeparator()],
             [sg.Text('Reference'), sg.Input('', key='-ref-'),
                 sg.VerticalSeparator(), sg.Text('Witness Siglum'),
                 sg.Input('', key='-siglum-'), sg.VerticalSeparator(), sg.Text('Add Hand'),
@@ -408,7 +408,7 @@ def get_layout(settings: dict):
                 sg.Combo(['          '], key='-hands-', readonly=True, enable_events=True), 
                 sg.Button('Select Hand'),
                 sg.Button('Delete Selected Hand'),
-                sg.Button('Get Text from Tokens'), sg.Stretch()],
+                sg.Button('Get Text from Tokens')],
             [transcription_frame, sg.Frame('Verse Notes', verse_note_frame)]]
 
     return layout
