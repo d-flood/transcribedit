@@ -5,7 +5,9 @@ import os
 from natsort import natsorted
 
 
-def get_chapter_tx(siglum: str, ref: str, wit_dir: str):
+def get_chapter_tx(siglum: str, ref: str, wit_dir: str, verse_per_line: bool, remove_markup: bool):
+    sep = ''
+    t = None
     ref = ref.replace(':', '.')
     ref = ref.replace(' ', '')
     chap = re.sub(r'\..+', '', ref)
@@ -17,11 +19,20 @@ def get_chapter_tx(siglum: str, ref: str, wit_dir: str):
                 tx = json.load(file)
             for wit in tx['witnesses']:
                 if 'text' in wit and 'c' not in wit:
-                    text.append(f" <{v.replace('.json', '')}> {wit['text']}")
+                    t = wit['text']
                     break
                 else:
-                    text.append(f" <{v.replace('.json', '')}> {tx['text']}")
+                    t = tx['text']
                     break
+            if verse_per_line:
+                t = t.replace(' \n', ' ')
+                t = t.replace('-\n', '')
+                t = t.replace('\n', ' ')
+                sep = '\n'
+            if remove_markup:
+                t = re.sub(r'<[^>]+>', '', t)
+                t = re.sub(r' +', ' ', t)
+            text.append(f"<{v.replace('.json', '')}> {t}{sep}")
     text = ''.join(text)
     return text
 

@@ -21,7 +21,9 @@ def get_settings(main_dir: str):
                     "font": ("Gill Sanz MT", 12),
                     "tx_font": ("Cambria", 12),
                     "dpi": True,
-                    "enable_chapter_view": True}
+                    "enable_chapter_view": True,
+                    "verse_per_line": False,
+                    "remove_markup": False}
         with open(f'{main_dir}/resources/settings.json', 'w') as file:
             json.dump(settings, file, indent=4)
         return settings
@@ -291,11 +293,14 @@ def fill_tx_from_tokens(verse_dict, siglum, window):
     words = ' '.join(words)
     window['-transcription-'].update(value=words)
 
-def load_chapter(window, siglum, ref, wit_dir, settings):
+def load_chapter(window, values: dict, settings: dict):
     if settings['enable_chapter_view'] is False:
         return
     try:
-        chapter = cv.get_chapter_tx(siglum, ref, wit_dir)
+        chapter = cv.get_chapter_tx(
+            values['-siglum-'], values['-ref-'], 
+            settings['wits_dir'], values['verse_per_line'], 
+            values['remove_markup'])
     except:
         chapter = '<<could not load chapter>>'
     window['chapter_tab'].update(value=chapter)
@@ -345,7 +350,7 @@ def get_layout(settings: dict):
 
     values_col = [[sg.Text('Image ID'), s, sg.Input('', key='-image_id-')],
                   [sg.Text('Page'), s, sg.Input('', key='-page-')],
-                  [sg.Text('Break'), sg.Combo(['', 'after', 'before', 'split'], readonly=True, key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], key='break_type', readonly=True), sg.Input('', key='break_num', size_px=(120, 40))],
+                  [sg.Text('Break'), sg.Combo(['', 'after', 'before', 'split'], readonly=True, key='break_place', default_value='no break'), sg.Combo(['line', 'column', 'page', None], key='break_type', readonly=True), sg.Input('', key='break_num')],
                   [sg.Combo(['', 'gap after', 'gap before'], default_value='no gap', key='gap', readonly=True), sg.Input('(gap details)', key='gap_details')]]
 
     corr_tip = 'For when the currently selected hand is NOT the first (*) hand'
@@ -353,8 +358,7 @@ def get_layout(settings: dict):
     values_col2 = [[sg.Text('Correction', justification='center', tooltip=corr_tip)],
                    [sg.Text('First Hand Reading'), s, sg.Input('', key='-first_hand_rdg-', tooltip=corr_tip)],
                    [sg.Text('Type'), s, sg.Combo(['', 'deletion', 'addition', 'substitution'], readonly=True, key='-corr_type-')],
-                   [sg.Text('Method'), s, sg.Combo(['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], readonly=True, key='-corr_method-')],
-                   [sg.Button('Submit Edits')]]
+                   [sg.Text('Method'), s, sg.Combo(['', 'above', 'left marg', 'right marg', 'overwritten', 'scraped', 'strikethrough', 'under'], readonly=True, key='-corr_method-')]]
     
     values_col3 = [[sg.Text('Marginale Type'), s, sg.Input('', key='-marg_type-')],
                    [sg.Combo(['', 'after word', 'above word', 'before word', 'below word', 'margin left', 'margin right', 'margin top', 'margin bottom'], default_value='', readonly=True, key='marg_loc'),
@@ -366,7 +370,8 @@ def get_layout(settings: dict):
                       sg.Column(main_info_col), sg.VerticalSeparator(), 
                       sg.Column(values_col), sg.VerticalSeparator(), 
                       sg.Column(values_col2), sg.VerticalSeparator(), 
-                      sg.Column(values_col3)]]
+                      sg.Column(values_col3)],
+                      [s, sg.Button('Submit Edits'), s]]
     
 
     transcription_frame = [
@@ -382,9 +387,14 @@ def get_layout(settings: dict):
                             [sg.Multiline('', key='-transcription-', font=settings['tx_font'])]]
                             
     if settings['enable_chapter_view'] is True:
-        chapter_tab = [[sg.MultilineOutput('', key='chapter_tab', font=settings['tx_font'])]]
-        tab_layout = [[sg.Tab('Transcription', transcription_frame), sg.Tab('View Chapter', chapter_tab)]]
-        transcription_frame = sg.TabGroup(tab_layout)
+        chapter_tab = [
+            [sg.Checkbox('Verse Per Line', default=settings['verse_per_line'], enable_events=True, key='verse_per_line'),
+                sg.Checkbox('Remove Markup', default=settings['remove_markup'], enable_events=True, key='remove_markup')],
+            [sg.MultilineOutput('', key='chapter_tab', font=settings['tx_font'])]]
+        tab_layout = [[sg.Tab('Transcription', transcription_frame, border_width=0), sg.Tab('View Chapter', chapter_tab)]]
+        transcription_frame = sg.TabGroup(tab_layout, background_color='#EAC8A3', 
+                                            title_color='black', selected_title_color='#FFF7C6', 
+                                            font=settings['font'], pad=(0,0))
     else:
         transcription_frame = sg.Frame('Transcription', transcription_frame)
 
@@ -461,7 +471,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 word_index = '2'
             except:
                 okay_popup('The file could not be loaded.', 'Bummer', icon)
-            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
+            load_chapter(window, values, settings)
 
         elif event == 'special 16777272':
             basetext_index = basetext_by_index(settings, basetext_index, '<Prev', window, icon)
@@ -476,7 +486,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             elif verse_dict != {}:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
                 word_index = '2'
-            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
+            load_chapter(window, values, settings)
             # verse_dict = save(verse_dict, values, icon)
 
         elif event.startswith('word'):
@@ -498,7 +508,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event in ['Save', 'special 16777264']:
             verse_dict = save(verse_dict, values, icon)
-            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
+            load_chapter(window, values, settings)
 
         elif event == 'Settings':
             settings = set_settings(settings, main_dir, icon)
@@ -583,6 +593,12 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
         elif event == 'Delete Selected Hand' and verse_dict != {} and len(verse_dict['witnesses']) > 1:
             verse_dict = tt.delete_hand(verse_dict, values['-hands-'])
             update_display_verse(verse_dict, window, verse_dict['witnesses'][0]['id'], '2', first_load=True)
+
+        elif event == 'verse_per_line':
+            load_chapter(window, values, settings)
+
+        elif event == 'remove_markup':
+            load_chapter(window, values, settings)
 
         # print(event)
     window.close()
