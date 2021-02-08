@@ -7,6 +7,7 @@ import transcribedit.PySimpleGUIQt as sg
 import transcribedit.manage_token as mt
 from transcribedit.set_settings import set_settings
 import transcribedit.tokenize_text as tt
+import transcribedit.combine_verses as cv
 
 
 def get_settings(main_dir: str):
@@ -18,7 +19,8 @@ def get_settings(main_dir: str):
                     "basetext_path": "",
                     "theme": "Parchment",
                     "font": "Cambria 12",
-                    "dpi": True}
+                    "dpi": True,
+                    "enable_chapter_view": True}
         with open(f'{main_dir}/resources/settings.json', 'w') as file:
             json.dump(settings, file, indent=4)
         return settings
@@ -289,6 +291,15 @@ def fill_tx_from_tokens(verse_dict, siglum, window):
     words = ' '.join(words)
     window['-transcription-'].update(value=words)
 
+def load_chapter(window, siglum, ref, wit_dir, settings):
+    if settings['enable_chapter_view'] is False:
+        return
+    try:
+        chapter = cv.get_chapter_tx(siglum, ref, wit_dir)
+    except:
+        chapter = '<<could not load chapter>>'
+    window['chapter_tab'].update(value=chapter)
+
 def initial_verse_rows():
     row1 = []
     row2 = []
@@ -313,7 +324,7 @@ def initial_verse_rows():
         key += 2
     return row1, row2, row3, row4
 
-def get_layout():
+def get_layout(settings: dict):
     s = sg.Stretch()
     menu = [['File', ['!Check for Updates', 'Settings', '---', 'Exit']]]
     
@@ -356,6 +367,7 @@ def get_layout():
                       sg.Column(values_col), sg.VerticalSeparator(), 
                       sg.Column(values_col2), sg.VerticalSeparator(), 
                       sg.Column(values_col3)]]
+    
 
     transcription_frame = [
                            [sg.Button('  Load Basetext  ', key='Load Basetext'), s, 
@@ -366,9 +378,15 @@ def get_layout():
                             sg.Button('  Hide Editing Options  ', key='Hide Editing Options'), s,
                             sg.Button('  Save  ', key='Save'), s,
                             sg.Combo(['Symbol       ', '·', '⁘', 'ϛ', 'Ϙ', '※', 'ϗ', 'underdot', 'overline', '\u2627', '\u2ce8', '\u2020', '\u0345'], 
-                                      key='-symbol-', enable_events=True, readonly=True)
-                                      ],
+                                      key='-symbol-', enable_events=True, readonly=True)],
                             [sg.Multiline('', key='-transcription-', font=('Cambria', 14))]]
+                            
+    if settings['enable_chapter_view'] is True:
+        chapter_tab = [[sg.MultilineOutput('', key='chapter_tab', font=('Cambria', 12))]]
+        tab_layout = [[sg.Tab('Transcription', transcription_frame), sg.Tab('View Chapter', chapter_tab)]]
+        transcription_frame = sg.TabGroup(tab_layout)
+    else:
+        transcription_frame = sg.Frame('Transcription', transcription_frame)
 
     verse_note_frame = [
                         [sg.Multiline('', key='verse_note', font=('Cambria', 14))],
@@ -391,16 +409,16 @@ def get_layout():
                 sg.Button('Select Hand'),
                 sg.Button('Delete Selected Hand'),
                 sg.Button('Get Text from Tokens'), sg.Stretch()],
-            [sg.Frame('Transcription', transcription_frame, visible=True), sg.Frame('Verse Notes', verse_note_frame)]]
+            [transcription_frame, sg.Frame('Verse Notes', verse_note_frame)]]
 
     return layout
 
 def main():
     version = 0.1
-    layout = get_layout()
     main_dir = pathlib.Path(__file__).parent.as_posix()
     icon = f'{main_dir}/resources/transcribedit.ico'
     settings = get_settings(main_dir)
+    layout = get_layout(settings)
     window = sg.Window(f'TranscribEdit   v{version}', layout, icon=icon, return_keyboard_events=True)
     basetext_index = None
     verse_dict = {}
@@ -443,6 +461,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
                 word_index = '2'
             except:
                 okay_popup('The file could not be loaded.', 'Bummer', icon)
+            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
 
         elif event == 'special 16777272':
             basetext_index = basetext_by_index(settings, basetext_index, '<Prev', window, icon)
@@ -457,6 +476,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
             elif verse_dict != {}:
                 submit_corrector_hand(verse_dict, values['-transcription-'], values['-ref-'], get_siglum_hand(values), window, icon)
                 word_index = '2'
+            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
             # verse_dict = save(verse_dict, values, icon)
 
         elif event.startswith('word'):
@@ -478,6 +498,7 @@ the "Reference" field must be filled.', 'Silly Goose', icon)
 
         elif event in ['Save', 'special 16777264']:
             verse_dict = save(verse_dict, values, icon)
+            load_chapter(window, values['-siglum-'], values['-ref-'], settings['wits_dir'], settings)
 
         elif event == 'Settings':
             settings = set_settings(settings, main_dir, icon)

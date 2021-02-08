@@ -18,7 +18,8 @@ using certain scaling settings and high resolution monitors on Windows.
 
     app_settings_frame = [
         [sg.Text('Color Theme:'), sg.Stretch(), sg.Combo(['Parchment', 'Dark Mode', 'Grey'], default_value=settings['theme'], key='-theme-', readonly=True)],
-        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Stretch(), sg.Combo(['0', '1', '2', 'True'], key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)]
+        [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Stretch(), sg.Combo(['0', '1', '2', 'True'], key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)],
+        [sg.Checkbox('Enable Chapter View', default=settings['enable_chapter_view'], key='enable_chapter_view')]
     ]
     return [
         [sg.Frame('Set Paths', paths_frame, border_width=5)],
@@ -27,6 +28,7 @@ using certain scaling settings and high resolution monitors on Windows.
     ]
 
 def save_settings(main_dir, settings, values):
+    settings['enable_chapter_view'] = values['enable_chapter_view']
     settings['wits_dir'] = values['-wits_dir-']
     settings['basetext_path'] = values['-basetext_path-']
     settings['theme'] = values['-theme-']
@@ -38,7 +40,7 @@ def save_settings(main_dir, settings, values):
     with open(f'{main_dir}/resources/settings.json', 'w') as file:
         json.dump(settings, file, indent=4)
     sg.popup_quick_message('Settings Saved!\n\
-Theme and DPI changes take affect on app restart.')
+App settings changes take affect on app restart.')
     return settings
 
 def set_settings(settings, main_dir, icon):
