@@ -46,6 +46,12 @@ The transcription text box is where the manuscript transcription is typed. It ca
   - Split words can be automatically encoded by using hyphen, *no space*, a new line, one of the above tags indicating a column break or page break, followed by the rest of the word. There should be no spaces between the first half of the word and the second half.
   - Alternative to `<cb>` and `<pb>` is `P|` and `C|`, and `-C-` and `-P-` for split words. The user should choose whichever they find most readable.
   - Gaps are automatically encoded whenever an entire word or group of words is enclosed in square brackets like [this]. If a word is partially reconstructed like th[is], then the word *is* sent for collation.
+
+### Chapter View Tab
+![](images/chapter_view.png)
+A chapter view tab can be enabled in the settings menu. I loads all of the individual verse files for the currently loaded chapter and displays them for the user's convenience. There are currently two options for viewing the text: 
+- User added markup in angle brackets can be removed, and
+- Verses can be set to begin on a new line.
   
 ### Transcription Box Buttons from Left to Right
 - 'Load Basetext': This will insert a verse from a basetext file. The basetext can be edited to match the witness being transcribed. See "Setting up the Basetext File" below for more info.
