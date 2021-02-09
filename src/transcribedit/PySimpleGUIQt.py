@@ -914,7 +914,7 @@ class Spin(Element):
             return str(self._strings[value])
 
         def valueFromText(self, text):
-            return self._values[text]
+            return self._values[int(text)]
 
 
     def _QtCallbackValueChanged(self, value):

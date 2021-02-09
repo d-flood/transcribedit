@@ -10,6 +10,10 @@ It must be specifically formatted: 1) One verse per line; 2) SBL-style reference
     dpi_tip = '''This is specifically for fixing "fuzziness" or poor proportions when
 using certain scaling settings and high resolution monitors on Windows.
 "True" should work most of the time.'''
+    tx_font_tip = '''The font used for text in the transcription box and for the tokens.
+Any font installed on your computer should work. An easy way to browse installed fonts
+by using MS Word to preview them and see their names.'''
+    font_sizes = ['size', 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20]
 
     paths_frame = [
         [sg.Text('Witness Directory Location:', tooltip=wits_dir_tip), sg.Input(settings['wits_dir'], tooltip=wits_dir_tip, key='-wits_dir-'), sg.FolderBrowse()],
@@ -17,6 +21,8 @@ using certain scaling settings and high resolution monitors on Windows.
     ]
 
     app_settings_frame = [
+        [sg.Text('Transcription Font:', tooltip=tx_font_tip), sg.Input(settings['tx_font'][0], tooltip=tx_font_tip, key='tx_font'),
+                sg.Combo(font_sizes, default_value=settings['tx_font'][1], key='tx_font_size')],
         [sg.Text('Color Theme:'), sg.Stretch(), sg.Combo(['Parchment', 'Dark Mode', 'Grey'], default_value=settings['theme'], key='-theme-', readonly=True)],
         [sg.Text('DPI Awareness:', tooltip=dpi_tip), sg.Stretch(), sg.Combo(['0', '1', '2', 'True'], key='-dpi-', readonly=True, default_value=str(settings['dpi']), tooltip=dpi_tip)],
         [sg.Checkbox('Enable Chapter View', default=settings['enable_chapter_view'], key='enable_chapter_view')]
@@ -28,6 +34,7 @@ using certain scaling settings and high resolution monitors on Windows.
     ]
 
 def save_settings(main_dir, settings, values):
+    settings['tx_font'] = [values['tx_font'], int(values['tx_font_size'])]
     settings['enable_chapter_view'] = values['enable_chapter_view']
     settings['wits_dir'] = values['-wits_dir-']
     settings['basetext_path'] = values['-basetext_path-']
