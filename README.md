@@ -1,7 +1,10 @@
 # TranscribEdit
 
-![](images/example.gif)
-![](images/example_gaps.gif)
+## NOTE
+I have turned my focus to developing a [Markdown to TEI](https://github.com/d-flood/MarkdownTEI) converter as my daily solution for transcribing manuscripts. TranscribEdit, while still useful to me in some ways, is unlikely to be updated.
+
+![screenshot](images/example.gif)
+![screenshot](images/example_gaps.gif)
 
 This is a transcription editor developed specifically for preparing transcriptions files that are compatible with the Institute for Textual Scholarship and Electronic Editing Collation Editor (https://github.com/itsee-birmingham/standalone_collation_editor).
 
